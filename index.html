@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>第7講</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #f0f2f5;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+
+    .player {
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.10);
+      padding: 28px 24px 24px;
+      width: 100%;
+      max-width: 480px;
+    }
+
+    .title {
+      font-size: 1.2rem;
+      font-weight: 600;
+      color: #1a1a2e;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+
+    /* Progress bar */
+    .progress-wrap {
+      position: relative;
+      height: 44px;
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+      touch-action: none;
+    }
+
+    .progress-track {
+      position: absolute;
+      left: 0; right: 0;
+      height: 6px;
+      background: #e0e0e0;
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 0%;
+      background: #4f8ef7;
+      border-radius: 3px;
+      transition: width 0.1s linear;
+    }
+
+    .progress-thumb {
+      position: absolute;
+      width: 18px;
+      height: 18px;
+      background: #4f8ef7;
+      border-radius: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      left: 0%;
+      box-shadow: 0 1px 4px rgba(79,142,247,0.4);
+      transition: left 0.1s linear;
+    }
+
+    .time-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.78rem;
+      color: #888;
+      margin-top: 2px;
+      margin-bottom: 16px;
+    }
+
+    /* Main controls */
+    .controls {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .btn {
+      border: none;
+      background: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      min-width: 44px;
+      min-height: 44px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: #4f8ef7;
+      transition: background 0.15s;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .btn:active { background: #e8f0fe; }
+
+    .btn svg { display: block; }
+
+    .btn-play {
+      background: #4f8ef7;
+      color: #fff;
+      min-width: 60px;
+      min-height: 60px;
+      box-shadow: 0 2px 12px rgba(79,142,247,0.35);
+    }
+
+    .btn-play:active { background: #3a78e0; }
+
+    .btn-skip { color: #555; }
+    .btn-stop { color: #e05252; }
+
+    /* Speed buttons */
+    .speed-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      margin-bottom: 16px;
+    }
+
+    .speed-label {
+      font-size: 0.78rem;
+      color: #888;
+      margin-right: 4px;
+    }
+
+    .btn-speed {
+      border: 1.5px solid #d0d0d0;
+      background: #fff;
+      color: #555;
+      font-size: 0.78rem;
+      font-weight: 600;
+      padding: 6px 10px;
+      border-radius: 20px;
+      cursor: pointer;
+      min-height: 36px;
+      transition: all 0.15s;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .btn-speed.active {
+      border-color: #4f8ef7;
+      background: #4f8ef7;
+      color: #fff;
+    }
+
+    .btn-speed:active { opacity: 0.7; }
+
+    /* Volume */
+    .volume-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .volume-icon { color: #888; flex-shrink: 0; }
+
+    input[type=range] {
+      -webkit-appearance: none;
+      appearance: none;
+      flex: 1;
+      height: 6px;
+      border-radius: 3px;
+      background: #e0e0e0;
+      outline: none;
+      cursor: pointer;
+    }
+
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: #4f8ef7;
+      cursor: pointer;
+      box-shadow: 0 1px 4px rgba(79,142,247,0.4);
+    }
+
+    input[type=range]::-moz-range-thumb {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: #4f8ef7;
+      cursor: pointer;
+      border: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="player">
+    <div class="title">第7講</div>
+
+    <audio id="audio" src="https://ryoxsakai.github.io/textaudio/%E7%AC%AC7%E8%AC%9B.mp3" preload="metadata"></audio>
+
+    <!-- Progress bar -->
+    <div class="progress-wrap" id="progressWrap">
+      <div class="progress-track">
+        <div class="progress-fill" id="progressFill"></div>
+      </div>
+      <div class="progress-thumb" id="progressThumb"></div>
+    </div>
+
+    <div class="time-row">
+      <span id="currentTime">0:00</span>
+      <span id="totalTime">0:00</span>
+    </div>
+
+    <!-- Controls -->
+    <div class="controls">
+      <button class="btn btn-skip" id="btnBack" aria-label="-10秒">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+          <path d="M12 5V2L7 7l5 5V9c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z" fill="currentColor"/>
+          <text x="8.5" y="16" font-size="6" font-weight="bold" fill="currentColor" font-family="sans-serif">10</text>
+        </svg>
+      </button>
+
+      <button class="btn btn-stop" id="btnStop" aria-label="停止">
+        <svg width="28" height="28" viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="14" rx="2" fill="currentColor"/></svg>
+      </button>
+
+      <button class="btn btn-play" id="btnPlay" aria-label="再生">
+        <svg id="iconPlay" width="28" height="28" viewBox="0 0 24 24"><polygon points="6,4 20,12 6,20" fill="currentColor"/></svg>
+        <svg id="iconPause" width="28" height="28" viewBox="0 0 24 24" style="display:none"><rect x="5" y="4" width="4" height="16" rx="1" fill="currentColor"/><rect x="15" y="4" width="4" height="16" rx="1" fill="currentColor"/></svg>
+      </button>
+
+      <button class="btn btn-skip" id="btnFwd" aria-label="+10秒">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+          <path d="M12 5V2l5 5-5 5V9c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6h2c0 4.42-3.58 8-8 8s-8-3.58-8-8 3.58-8 8-8z" fill="currentColor"/>
+          <text x="8.5" y="16" font-size="6" font-weight="bold" fill="currentColor" font-family="sans-serif">10</text>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Speed -->
+    <div class="speed-row">
+      <span class="speed-label">速度</span>
+      <button class="btn-speed" data-speed="0.75">0.75x</button>
+      <button class="btn-speed active" data-speed="1">1.0x</button>
+      <button class="btn-speed" data-speed="1.25">1.25x</button>
+      <button class="btn-speed" data-speed="1.5">1.5x</button>
+    </div>
+
+    <!-- Volume -->
+    <div class="volume-row">
+      <span class="volume-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z" fill="currentColor"/></svg>
+      </span>
+      <input type="range" id="volume" min="0" max="1" step="0.01" value="1" aria-label="音量">
+    </div>
+  </div>
+
+  <script>
+    const audio = document.getElementById('audio');
+    const btnPlay = document.getElementById('btnPlay');
+    const btnStop = document.getElementById('btnStop');
+    const btnBack = document.getElementById('btnBack');
+    const btnFwd = document.getElementById('btnFwd');
+    const iconPlay = document.getElementById('iconPlay');
+    const iconPause = document.getElementById('iconPause');
+    const progressWrap = document.getElementById('progressWrap');
+    const progressFill = document.getElementById('progressFill');
+    const progressThumb = document.getElementById('progressThumb');
+    const currentTimeEl = document.getElementById('currentTime');
+    const totalTimeEl = document.getElementById('totalTime');
+    const volumeEl = document.getElementById('volume');
+
+    function fmt(s) {
+      const m = Math.floor(s / 60);
+      const ss = Math.floor(s % 60);
+      return m + ':' + String(ss).padStart(2, '0');
+    }
+
+    function updateProgress() {
+      const pct = audio.duration ? (audio.currentTime / audio.duration) * 100 : 0;
+      progressFill.style.width = pct + '%';
+      progressThumb.style.left = pct + '%';
+      currentTimeEl.textContent = fmt(audio.currentTime);
+    }
+
+    audio.addEventListener('timeupdate', updateProgress);
+    audio.addEventListener('loadedmetadata', () => {
+      totalTimeEl.textContent = fmt(audio.duration);
+      updateProgress();
+    });
+    audio.addEventListener('ended', () => {
+      iconPlay.style.display = '';
+      iconPause.style.display = 'none';
+    });
+
+    // Play / Pause
+    btnPlay.addEventListener('click', () => {
+      if (audio.paused) {
+        audio.play();
+        iconPlay.style.display = 'none';
+        iconPause.style.display = '';
+      } else {
+        audio.pause();
+        iconPlay.style.display = '';
+        iconPause.style.display = 'none';
+      }
+    });
+
+    // Stop
+    btnStop.addEventListener('click', () => {
+      audio.pause();
+      audio.currentTime = 0;
+      iconPlay.style.display = '';
+      iconPause.style.display = 'none';
+      updateProgress();
+    });
+
+    // Skip
+    btnBack.addEventListener('click', () => { audio.currentTime = Math.max(0, audio.currentTime - 10); });
+    btnFwd.addEventListener('click', () => { audio.currentTime = Math.min(audio.duration || 0, audio.currentTime + 10); });
+
+    // Progress bar seek
+    function seekFromEvent(clientX) {
+      const rect = progressWrap.getBoundingClientRect();
+      const pct = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width));
+      if (audio.duration) audio.currentTime = pct * audio.duration;
+      updateProgress();
+    }
+
+    let dragging = false;
+
+    progressWrap.addEventListener('mousedown', e => { dragging = true; seekFromEvent(e.clientX); });
+    window.addEventListener('mousemove', e => { if (dragging) seekFromEvent(e.clientX); });
+    window.addEventListener('mouseup', () => { dragging = false; });
+
+    progressWrap.addEventListener('touchstart', e => { dragging = true; seekFromEvent(e.touches[0].clientX); }, { passive: true });
+    window.addEventListener('touchmove', e => { if (dragging) seekFromEvent(e.touches[0].clientX); }, { passive: true });
+    window.addEventListener('touchend', () => { dragging = false; });
+
+    // Speed
+    document.querySelectorAll('.btn-speed').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.btn-speed').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        audio.playbackRate = parseFloat(btn.dataset.speed);
+      });
+    });
+
+    // Volume
+    volumeEl.addEventListener('input', () => { audio.volume = volumeEl.value; });
+  </script>
+</body>
+</html>
