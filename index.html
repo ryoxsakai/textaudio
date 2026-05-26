@@ -127,18 +127,37 @@
     .btn-stop { color: #e05252; }
 
     /* Speed buttons */
-    .speed-row {
+    .speed-section {
+      margin-bottom: 16px;
+    }
+
+    .speed-slider-row {
       display: flex;
       align-items: center;
-      justify-content: center;
-      gap: 6px;
-      margin-bottom: 16px;
+      gap: 10px;
+      margin-bottom: 8px;
     }
 
     .speed-label {
       font-size: 0.78rem;
       color: #888;
-      margin-right: 4px;
+      flex-shrink: 0;
+    }
+
+    .speed-value {
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: #4f8ef7;
+      flex-shrink: 0;
+      width: 3em;
+      text-align: right;
+    }
+
+    .speed-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
     }
 
     .btn-speed {
@@ -249,12 +268,18 @@
     </div>
 
     <!-- Speed -->
-    <div class="speed-row">
-      <span class="speed-label">速度</span>
-      <button class="btn-speed" data-speed="0.75">0.75x</button>
-      <button class="btn-speed active" data-speed="1">1.0x</button>
-      <button class="btn-speed" data-speed="1.25">1.25x</button>
-      <button class="btn-speed" data-speed="1.5">1.5x</button>
+    <div class="speed-section">
+      <div class="speed-slider-row">
+        <span class="speed-label">速度</span>
+        <input type="range" id="speedSlider" min="0.5" max="2" step="0.05" value="1" aria-label="再生速度">
+        <span class="speed-value" id="speedValue">1.0x</span>
+      </div>
+      <div class="speed-row">
+        <button class="btn-speed" data-speed="0.75">0.75x</button>
+        <button class="btn-speed active" data-speed="1">1.0x</button>
+        <button class="btn-speed" data-speed="1.25">1.25x</button>
+        <button class="btn-speed" data-speed="1.5">1.5x</button>
+      </div>
     </div>
 
     <!-- Volume -->
@@ -350,12 +375,23 @@
     window.addEventListener('touchend', () => { dragging = false; });
 
     // Speed
-    document.querySelectorAll('.btn-speed').forEach(btn => {
-      btn.addEventListener('click', () => {
-        document.querySelectorAll('.btn-speed').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        audio.playbackRate = parseFloat(btn.dataset.speed);
+    const speedSlider = document.getElementById('speedSlider');
+    const speedValue = document.getElementById('speedValue');
+    const presetSpeeds = [0.75, 1, 1.25, 1.5];
+
+    function setSpeed(rate) {
+      audio.playbackRate = rate;
+      speedSlider.value = rate;
+      speedValue.textContent = (Math.round(rate * 100) / 100).toFixed(2).replace(/\.?0+$/, '') + 'x';
+      document.querySelectorAll('.btn-speed').forEach(b => {
+        b.classList.toggle('active', parseFloat(b.dataset.speed) === rate);
       });
+    }
+
+    speedSlider.addEventListener('input', () => setSpeed(parseFloat(speedSlider.value)));
+
+    document.querySelectorAll('.btn-speed').forEach(btn => {
+      btn.addEventListener('click', () => setSpeed(parseFloat(btn.dataset.speed)));
     });
 
     // Volume — iOS does not support programmatic volume control
