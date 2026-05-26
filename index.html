@@ -258,7 +258,8 @@
     </div>
 
     <!-- Volume -->
-    <div class="volume-row">
+    <p id="volumeNote" style="display:none;font-size:0.75rem;color:#aaa;text-align:center;margin-bottom:4px;">音量は端末のボタンで調整してください</p>
+    <div class="volume-row" id="volumeRow">
       <span class="volume-icon">
         <svg width="20" height="20" viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z" fill="currentColor"/></svg>
       </span>
@@ -357,8 +358,14 @@
       });
     });
 
-    // Volume
-    volumeEl.addEventListener('input', () => { audio.volume = volumeEl.value; });
+    // Volume — iOS does not support programmatic volume control
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    if (isIOS) {
+      document.getElementById('volumeRow').style.display = 'none';
+      document.getElementById('volumeNote').style.display = 'block';
+    } else {
+      volumeEl.addEventListener('input', () => { audio.volume = parseFloat(volumeEl.value); });
+    }
   </script>
 </body>
 </html>
