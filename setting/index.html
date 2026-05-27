@@ -919,7 +919,7 @@ function allRows() {
   return rows;
 }
 function audioUrl(y, t, l, n) { return `${cfg.r2BaseUrl}/${y.tag}/${t.tag}/${l.tag}/lesson${n}.mp3`; }
-function qrUrl(y, t, l, n)    { return `${BASE_URL}/?year=${y.id}&term=${t.id}&level=${l.id}&lesson=${n}`; }
+function qrUrl(y, t, l, n)    { return `${BASE_URL}/?year=${y.tag}&term=${t.tag}&level=${l.tag}&lesson=${n}`; }
 
 const CL_FK = 'dke_cl_filter';
 function saveClFilter() {
@@ -962,23 +962,52 @@ function renderContentList() {
   const rows = allRows().filter(r => (!yF || r.y.id === yF) && (!tF || r.t.id === tF) && (!lF || r.l.id === lF));
   const con = document.getElementById('contentListTable');
   if (!rows.length) { con.innerHTML = '<div class="msg-c">コンテンツがありません</div>'; return; }
-  let h = '<table class="cl"><thead><tr><th>講</th><th>操作</th></tr></thead><tbody>';
+  let h = '<table class="cl"><thead><tr><th style="white-space:nowrap;">講</th><th>タイトル</th><th>操作</th></tr></thead><tbody>';
   for (const r of rows) {
-    h += `<tr><td>第${r.n}講</td><td class="ops">
-      <button class="btn btn-navy" id="clplay-${r.key}" style="font-size:.75rem;height:32px;opacity:.35;" disabled onclick="openPlayer('${r.y.id}','${r.t.id}','${r.l.id}',${r.n})">▶ 再生</button>
-      <button class="btn btn-ghost" style="font-size:.75rem;height:32px;" onclick="openQr('${r.y.id}','${r.t.id}','${r.l.id}',${r.n})">QR</button>
-    </td></tr>`;
+    const title = cfg.lessonTitles?.[r.key] || '';
+    h += `<tr>
+      <td style="white-space:nowrap;">第${r.n}講</td>
+      <td><input class="lt-input" data-key="${r.key}" value="${esc(title)}" placeholder="タイトル（任意）" style="width:100%;min-width:120px;height:32px;padding:0 8px;border:1px solid var(--border);border-radius:6px;font-size:.82rem;box-sizing:border-box;"></td>
+      <td class="ops" style="white-space:nowrap;">
+        <button class="btn btn-navy" id="clplay-${r.key}" style="font-size:.75rem;height:32px;opacity:.35;" disabled onclick="openPlayer('${r.y.id}','${r.t.id}','${r.l.id}',${r.n})">▶</button>
+        <button class="btn btn-ghost" style="font-size:.75rem;height:32px;" onclick="openQr('${r.y.id}','${r.t.id}','${r.l.id}',${r.n})">QR</button>
+        <button class="btn btn-red" id="cldel-${r.key}" style="font-size:.75rem;height:32px;opacity:.35;" disabled onclick="deleteLesson('${r.y.id}','${r.t.id}','${r.l.id}',${r.n},'${r.key}')">削除</button>
+      </td>
+    </tr>`;
   }
   con.innerHTML = h + '</tbody></table>';
   if (cfg.r2BaseUrl) {
     rows.forEach(r => {
       fetch(audioUrl(r.y, r.t, r.l, r.n), { method: 'HEAD' }).then(res => {
         if (res.ok) {
-          const btn = document.getElementById(`clplay-${r.key}`);
-          if (btn) { btn.disabled = false; btn.style.opacity = ''; }
+          const pb = document.getElementById(`clplay-${r.key}`);
+          if (pb) { pb.disabled = false; pb.style.opacity = ''; }
+          const db = document.getElementById(`cldel-${r.key}`);
+          if (db) { db.disabled = false; db.style.opacity = ''; }
         }
       }).catch(() => {});
     });
+  }
+}
+
+async function deleteLesson(yId, tId, lId, n, key) {
+  const y = cfg.years.find(x => x.id === yId);
+  const t = cfg.terms.find(x => x.id === tId);
+  const l = cfg.levels.find(x => x.id === lId);
+  if (!y || !t || !l) return;
+  if (!confirm(`第${n}講（${y.name} / ${t.name} / ${l.name}）の音声をR2から削除しますか？`)) return;
+  if (!cfg.r2WorkerUrl) { toast('Worker URLが未設定のため削除できません', 'err'); return; }
+  const fileKey = `${y.tag}/${t.tag}/${l.tag}/lesson${n}.mp3`;
+  try {
+    const res = await fetch(`${cfg.r2WorkerUrl.replace(/\/$/, '')}/${fileKey}`, { method: 'DELETE' });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    toast(`第${n}講 の音声を削除しました`);
+    const pb = document.getElementById(`clplay-${key}`);
+    if (pb) { pb.disabled = true; pb.style.opacity = '.35'; }
+    const db = document.getElementById(`cldel-${key}`);
+    if (db) { db.disabled = true; db.style.opacity = '.35'; }
+  } catch (e) {
+    toast(`削除に失敗しました: ${e.message}`, 'err');
   }
 }
 

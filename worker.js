@@ -3,7 +3,7 @@ export default {
     const url = new URL(request.url);
     const cors = {
       'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, PUT, HEAD, OPTIONS',
+      'Access-Control-Allow-Methods': 'GET, PUT, DELETE, HEAD, OPTIONS',
       'Access-Control-Allow-Headers': '*',
       'Access-Control-Max-Age': '86400',
     };
@@ -19,6 +19,12 @@ export default {
       await env.BUCKET.put(key, request.body, {
         httpMetadata: { contentType: request.headers.get('Content-Type') || 'application/octet-stream' },
       });
+      return new Response('OK', { headers: cors });
+    }
+
+    if (request.method === 'DELETE') {
+      if (!key) return new Response('Missing key', { status: 400, headers: cors });
+      await env.BUCKET.delete(key);
       return new Response('OK', { headers: cors });
     }
 

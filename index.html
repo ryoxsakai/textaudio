@@ -390,13 +390,13 @@ overlay.addEventListener('click', e => { if (e.target === overlay) closePlayer()
 
 function handleParams() {
   const p = new URLSearchParams(location.search);
-  const yId = p.get('year'), tId = p.get('term'), lId = p.get('level'), n = parseInt(p.get('lesson'), 10);
-  if (!yId || !tId || !lId || !n) return;
-  const y = cfg.years.find(x => x.id === yId);
-  const t = cfg.terms.find(x => x.id === tId);
-  const l = cfg.levels.find(x => x.id === lId);
+  const yTag = p.get('year'), tTag = p.get('term'), lTag = p.get('level'), n = parseInt(p.get('lesson'), 10);
+  if (!yTag || !tTag || !lTag || !n) return;
+  const y = cfg.years.find(x => x.tag === yTag);
+  const t = cfg.terms.find(x => x.tag === tTag);
+  const l = cfg.levels.find(x => x.tag === lTag);
   if (!y || !t || !l || n < 1 || n > t.lessons) return;
-  openPlayer(yId, tId, lId, n);
+  openPlayer(y.id, t.id, l.id, n);
 }
 
 async function init() {
