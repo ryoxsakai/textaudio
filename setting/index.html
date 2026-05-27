@@ -3,6 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
   <title>設定 | DKE Medical English</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <style>
@@ -18,7 +21,7 @@
     .app-header a { color: rgba(255,255,255,.8); text-decoration: none; font-size: 1.2rem; }
     .app-title { font-size: 1rem; font-weight: 700; }
 
-    .tab-nav { display: flex; background: #fff; border-bottom: 2px solid var(--border); overflow-x: auto; scrollbar-width: none; }
+    .tab-nav { display: flex; background: #fff; border-bottom: 2px solid var(--border); overflow-x: auto; scrollbar-width: none; position: sticky; top: 56px; z-index: 9; }
     .tab-nav::-webkit-scrollbar { display: none; }
     .tab-btn { flex-shrink: 0; padding: 14px 16px; font-size: .82rem; font-weight: 600; color: var(--muted); border: none; background: none; cursor: pointer; border-bottom: 3px solid transparent; margin-bottom: -2px; white-space: nowrap; -webkit-tap-highlight-color: transparent; }
     .tab-btn.active { color: var(--navy); border-bottom-color: var(--navy); }
@@ -70,7 +73,7 @@
 
     /* Content list */
     .cl-scroll { overflow-x: auto; }
-    table.cl { width: 100%; min-width: 460px; border-collapse: collapse; background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,.06); }
+    table.cl { width: 100%; border-collapse: collapse; background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,.06); }
     table.cl thead th { background: var(--navy); color: #fff; padding: 11px 12px; text-align: left; font-size: .78rem; }
     table.cl tbody td { padding: 9px 12px; border-bottom: 1px solid #f0f2f6; font-size: .83rem; vertical-align: middle; }
     table.cl tbody tr:last-child td { border-bottom: none; }
@@ -195,6 +198,13 @@
     <select id="upTerm"><option value="">学期を選択</option></select>
     <select id="upLevel"><option value="">レベルを選択</option></select>
   </div>
+  <div style="background:#f8f9fb;border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+    <div style="flex:1;min-width:0;">
+      <div style="font-size:.7rem;color:var(--muted);margin-bottom:2px;">R2 APIエンドポイント</div>
+      <div id="r2ApiUrlDisplay" style="font-size:.75rem;font-family:monospace;color:var(--navy);word-break:break-all;">—</div>
+    </div>
+    <button class="btn btn-ghost" id="testUploadApiBtn" style="flex-shrink:0;height:36px;font-size:.78rem;">接続テスト</button>
+  </div>
   <div class="file-drop" id="fileDrop">
     <div>タップまたはドラッグでMP3を選択</div>
     <div style="font-size:.75rem;margin-top:4px;">複数選択可・ファイル名の数字を講番号に自動反映</div>
@@ -314,15 +324,20 @@ function toast(msg, type = 'ok') {
 
 /* ── Tabs ── */
 document.querySelectorAll('.tab-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
-    btn.classList.add('active');
-    document.getElementById(btn.dataset.tab).classList.add('active');
-    if (btn.dataset.tab === 't4') { populateClFilters(); renderContentList(); }
-    if (btn.dataset.tab === 't3') populateUploadSelects();
-  });
+  btn.addEventListener('click', () => switchTab(btn.dataset.tab));
 });
+
+function switchTab(tabId) {
+  const btn = document.querySelector(`.tab-btn[data-tab="${tabId}"]`);
+  if (!btn) return;
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById(tabId).classList.add('active');
+  localStorage.setItem('dke_active_tab', tabId);
+  if (tabId === 't4') renderContentList();
+  if (tabId === 't3') populateUploadSelects();
+}
 
 /* ── Load settings ── */
 async function loadAllSettings() {
@@ -508,7 +523,44 @@ function populateUploadSelects() {
   yS.innerHTML = '<option value="">年度を選択</option>' + cfg.years.map(y => `<option value="${y.id}">${y.name}</option>`).join('');
   tS.innerHTML = '<option value="">学期を選択</option>' + cfg.terms.map(t => `<option value="${t.id}">${t.name}</option>`).join('');
   lS.innerHTML = '<option value="">レベルを選択</option>' + cfg.levels.map(l => `<option value="${l.id}">${l.name}</option>`).join('');
+  updateApiUrlDisplay();
 }
+
+function updateApiUrlDisplay() {
+  const el = document.getElementById('r2ApiUrlDisplay');
+  el.textContent = cfg.r2AccountId && cfg.r2Bucket
+    ? `https://${cfg.r2AccountId}.r2.cloudflarestorage.com/${cfg.r2Bucket}/`
+    : '（R2設定でAccount IDとバケット名を入力してください）';
+}
+
+document.getElementById('testUploadApiBtn').addEventListener('click', async () => {
+  if (!cfg.r2AccountId || !cfg.r2Bucket) {
+    toast('R2設定でAccount IDとバケット名を確認してください', 'err'); return;
+  }
+  const url = `https://${cfg.r2AccountId}.r2.cloudflarestorage.com/${cfg.r2Bucket}/_cors_test_`;
+  const btn = document.getElementById('testUploadApiBtn');
+  btn.disabled = true; btn.textContent = '確認中…';
+
+  // Test with exact same headers as the actual signed upload (Authorization etc.)
+  try {
+    const r = await fetch(url, {
+      method: 'PUT',
+      mode: 'cors',
+      headers: {
+        'Content-Type': 'audio/mpeg',
+        'x-amz-date': '20240101T000000Z',
+        'x-amz-content-sha256': 'e3b0c44298fc1c149afbf4c8996fb924',
+        'Authorization': 'AWS4-HMAC-SHA256 Credential=test/20240101/auto/s3/aws4_request, SignedHeaders=content-type;host;x-amz-content-sha256;x-amz-date, Signature=0000'
+      },
+      body: new Uint8Array(0)
+    });
+    toast(`署名ヘッダーCORS OK（HTTP ${r.status}）— アップロード可能な状態です`);
+  } catch (e) {
+    toast('署名ヘッダーのCORS失敗 — R2のCORSにAuthorizationヘッダーを追加してください', 'err');
+  } finally {
+    btn.disabled = false; btn.textContent = '接続テスト';
+  }
+});
 
 let selectedFiles = [];
 let lessonNums = [];
@@ -526,8 +578,12 @@ fileDrop.addEventListener('dragleave', () => fileDrop.classList.remove('drag-ove
 fileDrop.addEventListener('drop', e => { e.preventDefault(); fileDrop.classList.remove('drag-over'); handleFiles(e.dataTransfer.files); });
 fileInput.addEventListener('change', e => handleFiles(e.target.files));
 
-function handleFiles(fileList) {
-  selectedFiles = Array.from(fileList).sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+async function handleFiles(fileList) {
+  const sorted = Array.from(fileList).sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+  selectedFiles = await Promise.all(sorted.map(async f => ({
+    name: f.name,
+    data: new Uint8Array(await f.arrayBuffer())
+  })));
   lessonNums = selectedFiles.map((f, i) => guessLessonNum(f.name, i + 1));
   renderPreview();
 }
@@ -589,10 +645,17 @@ document.getElementById('uploadBtn').addEventListener('click', async () => {
     const url  = `https://${cfg.r2AccountId}.r2.cloudflarestorage.com/${cfg.r2Bucket}/${key}`;
     txt.textContent = `${i+1} / ${selectedFiles.length} — ${esc(file.name)}`;
     try {
-      const res = await signedPut(url, file, 'audio/mpeg');
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const res = await signedPut(url, file.data, 'audio/mpeg');
+      if (!res.ok) {
+        const body = await res.text().catch(() => '');
+        throw new Error(`HTTP ${res.status} ${body.slice(0, 200)}`);
+      }
       ok++;
-    } catch (e) { fail++; toast(`${file.name}: ${e.message}`, 'err'); }
+    } catch (e) {
+      fail++;
+      console.error('Upload error:', e, 'URL:', url);
+      toast(`${file.name}: ${e.message}`, 'err');
+    }
     bar.style.width = ((i+1) / selectedFiles.length * 100) + '%';
   }
   txt.textContent = `完了: ${ok} 件${fail ? ' / 失敗: '+fail+' 件' : ''}`;
@@ -684,10 +747,11 @@ async function signedPut(url, body, contentType) {
   const amz = `${ds}T${pad(now.getUTCHours())}${pad(now.getUTCMinutes())}${pad(now.getUTCSeconds())}Z`;
   const region = 'auto', service = 's3';
   const u = new URL(url);
-  let bodyBytes;
-  if (body instanceof File || body instanceof Blob) bodyBytes = new Uint8Array(await body.arrayBuffer());
-  else bodyBytes = new TextEncoder().encode(body);
-  const payHash = await sha256hex(bodyBytes);
+  let bodyBlob;
+  if (body instanceof Blob) bodyBlob = body;
+  else if (body instanceof Uint8Array) bodyBlob = new Blob([body], { type: contentType });
+  else bodyBlob = new Blob([new TextEncoder().encode(body)], { type: contentType });
+  const payHash = 'UNSIGNED-PAYLOAD';
   const canonHeaders = `content-type:${contentType}\nhost:${u.hostname}\nx-amz-content-sha256:${payHash}\nx-amz-date:${amz}\n`;
   const signedHdrs   = 'content-type;host;x-amz-content-sha256;x-amz-date';
   const canonReq     = `PUT\n${u.pathname}\n\n${canonHeaders}\n${signedHdrs}\n${payHash}`;
@@ -700,11 +764,12 @@ async function signedPut(url, body, contentType) {
   const sig   = await hmacHex(kSign, sts);
   return fetch(url, {
     method: 'PUT',
+    mode: 'cors',
     headers: {
       'Authorization': `AWS4-HMAC-SHA256 Credential=${cfg.r2AccessKeyId}/${credScope}, SignedHeaders=${signedHdrs}, Signature=${sig}`,
       'x-amz-date': amz, 'x-amz-content-sha256': payHash, 'Content-Type': contentType
     },
-    body: bodyBytes
+    body: bodyBlob
   });
 }
 
@@ -853,9 +918,8 @@ async function init() {
   renderTermList();
   renderLevelList();
   loadR2Fields();
-  ['clYear','clTerm','clLevel'].forEach(id => {
-    document.getElementById(id).addEventListener('change', renderContentList);
-  });
+  const savedTab = localStorage.getItem('dke_active_tab');
+  if (savedTab) switchTab(savedTab);
 }
 init();
 </script>
