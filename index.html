@@ -163,6 +163,7 @@ const DEFAULTS = {
 };
 
 let cfg = null, done = {}, cur = null;
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
 function loadDone() { try { done = JSON.parse(localStorage.getItem(DK) || '{}'); } catch { done = {}; } }
 function saveDone() { localStorage.setItem(DK, JSON.stringify(done)); }
@@ -178,6 +179,7 @@ async function loadCfg() {
       const j = await r.json();
       cfg = j;
       if (!cfg.years) cfg.years = [...DEFAULTS.years];
+      if (!cfg.lessonTitles) cfg.lessonTitles = {};
       localStorage.setItem(SK, JSON.stringify(Object.assign({}, local || {}, j)));
       return;
     }
@@ -185,9 +187,10 @@ async function loadCfg() {
   if (local && local.terms && local.levels) {
     cfg = local;
     if (!cfg.years) cfg.years = [...DEFAULTS.years];
+    if (!cfg.lessonTitles) cfg.lessonTitles = {};
     return;
   }
-  cfg = Object.assign({}, DEFAULTS);
+  cfg = Object.assign({}, DEFAULTS, { lessonTitles: {} });
 }
 
 function allRows() {
@@ -217,8 +220,12 @@ function render() {
   let h = '<table><thead><tr><th>講</th><th>操作</th></tr></thead><tbody>';
   for (const r of rows) {
     const d = !!done[r.key];
+    const lessonTitle = cfg.lessonTitles?.[r.key] || '';
+    const lessonCell = lessonTitle
+      ? `第${r.n}講<br><span style="font-size:.75rem;color:var(--muted);font-weight:400;">${esc(lessonTitle)}</span>`
+      : `第${r.n}講`;
     h += `<tr class="${d ? 'done-row' : ''}">
-      <td>第${r.n}講</td>
+      <td>${lessonCell}</td>
       <td class="ops">
         <button class="btn btn-play" id="play-${r.key}" style="opacity:.35;" disabled onclick="openPlayer('${r.y.id}','${r.t.id}','${r.l.id}',${r.n})">▶ 再生</button>
         <button class="btn btn-done ${d ? 'is-done' : ''}" onclick="toggleDone('${r.y.id}','${r.t.id}','${r.l.id}',${r.n})">${d ? '✓ 完了' : '完了'}</button>
@@ -334,7 +341,11 @@ function openPlayer(yId, tId, lId, n) {
   const l = cfg.levels.find(x => x.id === lId);
   if (!y || !t || !l) return;
   cur = { yId, tId, lId, n };
-  document.getElementById('playerTitle').textContent = `${y.name} / ${t.name} / ${l.name} / 第${n}講`;
+  const lessonTitle = cfg.lessonTitles?.[mk(yId, tId, lId, n)] || '';
+  const mainLabel = `${y.name} / ${t.name} / ${l.name} / 第${n}講`;
+  document.getElementById('playerTitle').innerHTML = lessonTitle
+    ? `${esc(mainLabel)}<br><span style="font-size:.82rem;font-weight:400;color:var(--muted);">${esc(lessonTitle)}</span>`
+    : esc(mainLabel);
   audio.src = audioUrl(y, t, l, n);
   audio.currentTime = 0;
   setPI(false);

@@ -838,13 +838,14 @@ async function signedPut(url, body, contentType) {
 }
 
 /* ── Content list ── */
+function mk(yId, tId, lId, n) { return `${yId}_${tId}_${lId}_${n}`; }
 function allRows() {
   const rows = [];
   for (const y of cfg.years)
     for (const t of cfg.terms)
       for (const l of cfg.levels)
         for (let n = 1; n <= t.lessons; n++)
-          rows.push({ y, t, l, n });
+          rows.push({ y, t, l, n, key: mk(y.id, t.id, l.id, n) });
   return rows;
 }
 function audioUrl(y, t, l, n) { return `${cfg.r2BaseUrl}/${y.tag}/${t.tag}/${l.tag}/lesson${n}.mp3`; }
@@ -897,6 +898,34 @@ function renderContentList() {
     });
   }
 }
+
+document.getElementById('saveTitlesBtn').addEventListener('click', async () => {
+  document.querySelectorAll('.lt-input').forEach(inp => {
+    const key = inp.dataset.key;
+    const val = inp.value.trim();
+    if (val) cfg.lessonTitles[key] = val;
+    else delete cfg.lessonTitles[key];
+  });
+  persistLocal();
+  const json = JSON.stringify({ r2BaseUrl: cfg.r2BaseUrl, years: cfg.years, terms: cfg.terms, levels: cfg.levels, defaultYear: cfg.defaultYear, defaultTerm: cfg.defaultTerm, defaultLevel: cfg.defaultLevel, lessonTitles: cfg.lessonTitles }, null, 2);
+  if (cfg.r2WorkerUrl || (cfg.r2AccountId && cfg.r2AccessKeyId && cfg.r2SecretKey && cfg.r2Bucket)) {
+    try {
+      let res;
+      if (cfg.r2WorkerUrl) {
+        res = await putViaWorker('settings.json', json, 'application/json');
+      } else {
+        const url = `https://${cfg.r2AccountId}.r2.cloudflarestorage.com/${cfg.r2Bucket}/settings.json`;
+        res = await signedPut(url, json, 'application/json');
+      }
+      if (!res.ok) throw new Error(res.status);
+      toast('タイトルを保存しました（LocalStorage + R2）');
+    } catch (e) {
+      toast('LocalStorageに保存しました（R2アップロード失敗: ' + e.message + '）', 'err');
+    }
+  } else {
+    toast('LocalStorageに保存しました（R2未設定）');
+  }
+});
 
 /* ── Player ── */
 const audio    = document.getElementById('audio');
