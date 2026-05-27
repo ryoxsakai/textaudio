@@ -21,7 +21,7 @@
     .app-header a { color: rgba(255,255,255,.8); text-decoration: none; font-size: 1.2rem; }
     .app-title { font-size: 1rem; font-weight: 700; }
 
-    .tab-nav { display: flex; background: #fff; border-bottom: 2px solid var(--border); overflow-x: auto; scrollbar-width: none; position: sticky; top: 56px; z-index: 9; }
+    .tab-nav { display: flex; background: #fff; border-bottom: 2px solid var(--border); overflow-x: auto; scrollbar-width: none; position: sticky; top: 56px; z-index: 9; touch-action: pan-x; overscroll-behavior-x: contain; }
     .tab-nav::-webkit-scrollbar { display: none; }
     .tab-btn { flex-shrink: 0; padding: 14px 16px; font-size: .82rem; font-weight: 600; color: var(--muted); border: none; background: none; cursor: pointer; border-bottom: 3px solid transparent; margin-bottom: -2px; white-space: nowrap; -webkit-tap-highlight-color: transparent; }
     .tab-btn.active { color: var(--navy); border-bottom-color: var(--navy); }
@@ -921,21 +921,34 @@ function allRows() {
 function audioUrl(y, t, l, n) { return `${cfg.r2BaseUrl}/${y.tag}/${t.tag}/${l.tag}/lesson${n}.mp3`; }
 function qrUrl(y, t, l, n)    { return `${BASE_URL}/?year=${y.id}&term=${t.id}&level=${l.id}&lesson=${n}`; }
 
+const CL_FK = 'dke_cl_filter';
+function saveClFilter() {
+  try {
+    localStorage.setItem(CL_FK, JSON.stringify({
+      year:  document.getElementById('clYear').value,
+      term:  document.getElementById('clTerm').value,
+      level: document.getElementById('clLevel').value
+    }));
+  } catch {}
+}
+
 let _clFiltersReady = false;
 function populateClFilters() {
   const yS = document.getElementById('clYear');
   const tS = document.getElementById('clTerm');
   const lS = document.getElementById('clLevel');
   const yv = yS.value, tv = tS.value, lv = lS.value;
+  let saved = {};
+  try { saved = JSON.parse(localStorage.getItem(CL_FK) || '{}'); } catch {}
   yS.innerHTML = cfg.years.map(y  => `<option value="${y.id}">${y.name}</option>`).join('');
   tS.innerHTML = cfg.terms.map(t  => `<option value="${t.id}">${t.name}</option>`).join('');
   lS.innerHTML = cfg.levels.map(l => `<option value="${l.id}">${l.name}</option>`).join('');
-  if (yv) yS.value = yv;
-  if (tv) tS.value = tv;
-  if (lv) lS.value = lv;
+  if (yv) yS.value = yv; else if (saved.year)  yS.value = saved.year;
+  if (tv) tS.value = tv; else if (saved.term)  tS.value = saved.term;
+  if (lv) lS.value = lv; else if (saved.level) lS.value = saved.level;
   if (!_clFiltersReady) {
     ['clYear','clTerm','clLevel'].forEach(id =>
-      document.getElementById(id).addEventListener('change', renderContentList)
+      document.getElementById(id).addEventListener('change', () => { saveClFilter(); renderContentList(); })
     );
     _clFiltersReady = true;
   }
