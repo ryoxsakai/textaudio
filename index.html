@@ -89,9 +89,9 @@
 </header>
 
 <div class="filter-bar">
-  <select id="filterYear"><option value="">年度: 全て</option></select>
-  <select id="filterTerm"><option value="">学期: 全て</option></select>
-  <select id="filterLevel"><option value="">レベル: 全て</option></select>
+  <select id="filterYear"></select>
+  <select id="filterTerm"></select>
+  <select id="filterLevel"></select>
 </div>
 
 <div class="table-scroll">
@@ -211,11 +211,11 @@ function render() {
   updateBadge();
   const con = document.getElementById('tableContainer');
   if (!rows.length) { con.innerHTML = '<div class="msg-c">該当するコンテンツがありません</div>'; return; }
-  let h = '<table><thead><tr><th>年度</th><th>学期</th><th>レベル</th><th>講</th><th>操作</th></tr></thead><tbody>';
+  let h = '<table><thead><tr><th>講</th><th>操作</th></tr></thead><tbody>';
   for (const r of rows) {
     const d = !!done[r.key];
     h += `<tr class="${d ? 'done-row' : ''}">
-      <td>${r.y.name}</td><td>${r.t.name}</td><td>${r.l.name}</td><td>第${r.n}講</td>
+      <td>第${r.n}講</td>
       <td class="ops">
         <button class="btn btn-play" onclick="openPlayer('${r.y.id}','${r.t.id}','${r.l.id}',${r.n})">▶ 再生</button>
         <button class="btn btn-done ${d ? 'is-done' : ''}" onclick="toggleDone('${r.y.id}','${r.t.id}','${r.l.id}',${r.n})">${d ? '✓ 完了' : '完了'}</button>
@@ -230,10 +230,12 @@ function populateFilters() {
   const tSel = document.getElementById('filterTerm');
   const lSel = document.getElementById('filterLevel');
   const yv = ySel.value, tv = tSel.value, lv = lSel.value;
-  ySel.innerHTML = '<option value="">年度: 全て</option>' + cfg.years.map(y => `<option value="${y.id}">${y.name}</option>`).join('');
-  tSel.innerHTML = '<option value="">学期: 全て</option>' + cfg.terms.map(t => `<option value="${t.id}">${t.name}</option>`).join('');
-  lSel.innerHTML = '<option value="">レベル: 全て</option>' + cfg.levels.map(l => `<option value="${l.id}">${l.name}</option>`).join('');
-  ySel.value = yv; tSel.value = tv; lSel.value = lv;
+  ySel.innerHTML = cfg.years.map(y => `<option value="${y.id}">${y.name}</option>`).join('');
+  tSel.innerHTML = cfg.terms.map(t => `<option value="${t.id}">${t.name}</option>`).join('');
+  lSel.innerHTML = cfg.levels.map(l => `<option value="${l.id}">${l.name}</option>`).join('');
+  if (yv) ySel.value = yv;
+  if (tv) tSel.value = tv;
+  if (lv) lSel.value = lv;
 }
 
 function toggleDone(yId, tId, lId, n) {
