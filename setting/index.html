@@ -185,6 +185,11 @@
     <label class="form-label">バケット名</label>
     <input class="form-input" id="r2Bucket" type="text" value="textaudio">
   </div>
+  <div class="form-row">
+    <label class="form-label">Worker URL <span style="font-weight:400;color:var(--muted)">（アップロード用・任意）</span></label>
+    <input class="form-input" id="r2WorkerUrl" type="url" placeholder="https://textaudio-upload.xxxxx.workers.dev">
+    <div class="form-hint">Cloudflare Worker 経由でアップロードする場合に入力。設定すると AWS 署名不要になります。</div>
+  </div>
   <div style="display:flex;gap:10px;margin-top:4px;">
     <button class="btn btn-ghost" id="testConnBtn" style="flex:1;height:44px;">接続テスト</button>
     <button class="btn btn-navy btn-save" id="saveR2Btn" style="flex:2;">保存する</button>
@@ -348,6 +353,7 @@ async function loadAllSettings() {
   cfg.r2SecretKey  = local?.r2SecretKey  || '';
   cfg.r2Bucket     = local?.r2Bucket     || 'textaudio';
   cfg.r2BaseUrl    = local?.r2BaseUrl    || DEFAULTS.r2BaseUrl;
+  cfg.r2WorkerUrl  = local?.r2WorkerUrl  || '';
 
   if (cfg.r2BaseUrl) {
     try {
@@ -371,6 +377,7 @@ function persistLocal() {
   localStorage.setItem(SK, JSON.stringify({
     r2BaseUrl: cfg.r2BaseUrl, r2AccountId: cfg.r2AccountId,
     r2AccessKeyId: cfg.r2AccessKeyId, r2SecretKey: cfg.r2SecretKey, r2Bucket: cfg.r2Bucket,
+    r2WorkerUrl: cfg.r2WorkerUrl,
     years: cfg.years, terms: cfg.terms, levels: cfg.levels
   }));
 }
@@ -475,10 +482,15 @@ document.getElementById('saveContentBtn').addEventListener('click', async () => 
   persistLocal();
   const json = JSON.stringify({ r2BaseUrl: cfg.r2BaseUrl, years: cfg.years, terms: cfg.terms, levels: cfg.levels }, null, 2);
 
-  if (cfg.r2AccountId && cfg.r2AccessKeyId && cfg.r2SecretKey && cfg.r2Bucket) {
+  if (cfg.r2WorkerUrl || (cfg.r2AccountId && cfg.r2AccessKeyId && cfg.r2SecretKey && cfg.r2Bucket)) {
     try {
-      const url = `https://${cfg.r2AccountId}.r2.cloudflarestorage.com/${cfg.r2Bucket}/settings.json`;
-      const res = await signedPut(url, json, 'application/json');
+      let res;
+      if (cfg.r2WorkerUrl) {
+        res = await putViaWorker('settings.json', json, 'application/json');
+      } else {
+        const url = `https://${cfg.r2AccountId}.r2.cloudflarestorage.com/${cfg.r2Bucket}/settings.json`;
+        res = await signedPut(url, json, 'application/json');
+      }
       if (!res.ok) throw new Error(res.status);
       toast('保存しました（LocalStorage + R2）');
     } catch (e) {
@@ -496,6 +508,7 @@ function loadR2Fields() {
   document.getElementById('r2AccessKeyId').value = cfg.r2AccessKeyId || '';
   document.getElementById('r2SecretKey').value   = cfg.r2SecretKey  || '';
   document.getElementById('r2Bucket').value      = cfg.r2Bucket     || 'textaudio';
+  document.getElementById('r2WorkerUrl').value   = cfg.r2WorkerUrl  || '';
 }
 document.getElementById('saveR2Btn').addEventListener('click', () => {
   cfg.r2BaseUrl    = document.getElementById('r2BaseUrl').value.trim().replace(/\/$/, '');
@@ -503,6 +516,7 @@ document.getElementById('saveR2Btn').addEventListener('click', () => {
   cfg.r2AccessKeyId = document.getElementById('r2AccessKeyId').value.trim();
   cfg.r2SecretKey  = document.getElementById('r2SecretKey').value.trim();
   cfg.r2Bucket     = document.getElementById('r2Bucket').value.trim() || 'textaudio';
+  cfg.r2WorkerUrl  = document.getElementById('r2WorkerUrl').value.trim().replace(/\/$/, '');
   persistLocal();
   toast('R2設定を保存しました');
 });
@@ -647,7 +661,8 @@ document.getElementById('uploadBtn').addEventListener('click', async () => {
   const l = cfg.levels.find(x => x.id === document.getElementById('upLevel').value);
   if (!y || !t || !l) { toast('年度・学期・レベルを選択してください', 'err'); return; }
   if (!selectedFiles.length) { toast('ファイルを選択してください', 'err'); return; }
-  if (!cfg.r2AccountId || !cfg.r2AccessKeyId || !cfg.r2SecretKey) { toast('R2設定が未完了です', 'err'); return; }
+  const useWorker = !!cfg.r2WorkerUrl;
+  if (!useWorker && (!cfg.r2AccountId || !cfg.r2AccessKeyId || !cfg.r2SecretKey)) { toast('R2設定が未完了です（Worker URLかS3認証情報を入力してください）', 'err'); return; }
 
   const prog = document.getElementById('uploadProgress');
   const bar  = document.getElementById('progressBar');
@@ -662,7 +677,9 @@ document.getElementById('uploadBtn').addEventListener('click', async () => {
     const url  = `https://${cfg.r2AccountId}.r2.cloudflarestorage.com/${cfg.r2Bucket}/${key}`;
     txt.textContent = `${i+1} / ${selectedFiles.length} — ${esc(file.name)}`;
     try {
-      const res = await signedPut(url, file.data, 'audio/mpeg');
+      const res = useWorker
+        ? await putViaWorker(key, file.data, 'audio/mpeg')
+        : await signedPut(url, file.data, 'audio/mpeg');
       if (!res.ok) {
         const body = await res.text().catch(() => '');
         throw new Error(`HTTP ${res.status} ${body.slice(0, 200)}`);
@@ -670,7 +687,7 @@ document.getElementById('uploadBtn').addEventListener('click', async () => {
       ok++;
     } catch (e) {
       fail++;
-      console.error('Upload error:', e, 'URL:', url);
+      console.error('Upload error:', e, 'URL:', useWorker ? `${cfg.r2WorkerUrl}/${key}` : url);
       toast(`${file.name}: ${e.message}`, 'err');
     }
     bar.style.width = ((i+1) / selectedFiles.length * 100) + '%';
@@ -757,6 +774,15 @@ async function hmacBytes(keyMat, msg) {
 async function hmacHex(keyMat, msg) {
   return Array.from(await hmacBytes(keyMat, msg)).map(b => b.toString(16).padStart(2,'0')).join('');
 }
+async function putViaWorker(key, body, contentType) {
+  const base = cfg.r2WorkerUrl.replace(/\/$/, '');
+  return fetch(`${base}/${key}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': contentType },
+    body: body instanceof Uint8Array ? new Blob([body], { type: contentType }) : body
+  });
+}
+
 async function signedPut(url, body, contentType) {
   const now = new Date();
   const pad = n => String(n).padStart(2,'0');
