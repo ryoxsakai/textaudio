@@ -527,18 +527,33 @@ document.getElementById('testUploadApiBtn').addEventListener('click', async () =
   if (!cfg.r2AccountId || !cfg.r2Bucket) {
     toast('R2設定でAccount IDとバケット名を確認してください', 'err'); return;
   }
-  const url = `https://${cfg.r2AccountId}.r2.cloudflarestorage.com/${cfg.r2Bucket}/settings.json`;
+  const url = `https://${cfg.r2AccountId}.r2.cloudflarestorage.com/${cfg.r2Bucket}/_cors_test_`;
   const btn = document.getElementById('testUploadApiBtn');
   btn.disabled = true; btn.textContent = '確認中…';
+
+  // Step 1: GET test (no preflight needed)
+  let getOk = false;
   try {
-    const r = await fetch(url, { mode: 'cors' });
-    if (r.ok || r.status === 403 || r.status === 404) {
-      toast(`エンドポイント到達OK（HTTP ${r.status}）— CORS設定済み`);
-    } else {
-      toast(`HTTP ${r.status} — エンドポイントは到達できましたが予期しないレスポンス`, 'err');
-    }
+    const r = await fetch(`https://${cfg.r2AccountId}.r2.cloudflarestorage.com/${cfg.r2Bucket}/settings.json`, { mode: 'cors' });
+    getOk = true;
+  } catch (_) {}
+
+  // Step 2: PUT test (preflight required — proves CORS allows PUT)
+  try {
+    const r = await fetch(url, {
+      method: 'PUT',
+      mode: 'cors',
+      headers: { 'Content-Type': 'application/octet-stream' },
+      body: new Uint8Array(0)
+    });
+    // Any HTTP response means CORS preflight succeeded
+    toast(`PUT CORS OK（HTTP ${r.status}）— アップロード可能な状態です`);
   } catch (e) {
-    toast('到達失敗 — Account IDが間違っているか、CORSが未設定です', 'err');
+    if (getOk) {
+      toast('GET はOKですがPUT CORSが失敗 — R2のCORSにPUTを追加してください', 'err');
+    } else {
+      toast('到達失敗 — Account IDが間違っているか、CORSが未設定です', 'err');
+    }
   } finally {
     btn.disabled = false; btn.textContent = '接続テスト';
   }
