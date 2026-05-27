@@ -843,6 +843,7 @@ function populateClFilters() {
 }
 
 function renderContentList() {
+  populateClFilters();
   const yF = document.getElementById('clYear').value;
   const tF = document.getElementById('clTerm').value;
   const lF = document.getElementById('clLevel').value;
