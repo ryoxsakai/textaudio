@@ -217,6 +217,11 @@
 
 <!-- Tab4: コンテンツ一覧 -->
 <div class="tab-panel" id="t4">
+  <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;">
+    <select id="clYear" style="flex:1 1 calc(33% - 8px);min-width:100px;height:38px;padding:0 8px;border:1px solid var(--border);border-radius:8px;font-size:.8rem;background:#fff;"></select>
+    <select id="clTerm" style="flex:1 1 calc(33% - 8px);min-width:100px;height:38px;padding:0 8px;border:1px solid var(--border);border-radius:8px;font-size:.8rem;background:#fff;"></select>
+    <select id="clLevel" style="flex:1 1 calc(33% - 8px);min-width:100px;height:38px;padding:0 8px;border:1px solid var(--border);border-radius:8px;font-size:.8rem;background:#fff;"></select>
+  </div>
   <div class="cl-scroll"><div id="contentListTable"><div class="msg-c">読み込み中…</div></div></div>
 </div>
 
@@ -314,7 +319,7 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
     btn.classList.add('active');
     document.getElementById(btn.dataset.tab).classList.add('active');
-    if (btn.dataset.tab === 't4') renderContentList();
+    if (btn.dataset.tab === 't4') { populateClFilters(); renderContentList(); }
     if (btn.dataset.tab === 't3') populateUploadSelects();
   });
 });
@@ -655,13 +660,29 @@ function allRows() {
 function audioUrl(y, t, l, n) { return `${cfg.r2BaseUrl}/${y.tag}/${t.tag}/${l.tag}/lesson${n}.mp3`; }
 function qrUrl(y, t, l, n)    { return `${BASE_URL}/?year=${y.id}&term=${t.id}&level=${l.id}&lesson=${n}`; }
 
+function populateClFilters() {
+  const yS = document.getElementById('clYear');
+  const tS = document.getElementById('clTerm');
+  const lS = document.getElementById('clLevel');
+  const yv = yS.value, tv = tS.value, lv = lS.value;
+  yS.innerHTML = cfg.years.map(y  => `<option value="${y.id}">${y.name}</option>`).join('');
+  tS.innerHTML = cfg.terms.map(t  => `<option value="${t.id}">${t.name}</option>`).join('');
+  lS.innerHTML = cfg.levels.map(l => `<option value="${l.id}">${l.name}</option>`).join('');
+  if (yv) yS.value = yv;
+  if (tv) tS.value = tv;
+  if (lv) lS.value = lv;
+}
+
 function renderContentList() {
-  const rows = allRows();
+  const yF = document.getElementById('clYear').value;
+  const tF = document.getElementById('clTerm').value;
+  const lF = document.getElementById('clLevel').value;
+  const rows = allRows().filter(r => (!yF || r.y.id === yF) && (!tF || r.t.id === tF) && (!lF || r.l.id === lF));
   const con = document.getElementById('contentListTable');
   if (!rows.length) { con.innerHTML = '<div class="msg-c">コンテンツがありません</div>'; return; }
-  let h = '<table class="cl"><thead><tr><th>年度</th><th>学期</th><th>レベル</th><th>講</th><th>操作</th></tr></thead><tbody>';
+  let h = '<table class="cl"><thead><tr><th>講</th><th>操作</th></tr></thead><tbody>';
   for (const r of rows) {
-    h += `<tr><td>${r.y.name}</td><td>${r.t.name}</td><td>${r.l.name}</td><td>第${r.n}講</td><td class="ops">
+    h += `<tr><td>第${r.n}講</td><td class="ops">
       <button class="btn btn-navy" style="font-size:.75rem;height:32px;" onclick="openPlayer('${r.y.id}','${r.t.id}','${r.l.id}',${r.n})">▶ 再生</button>
       <button class="btn btn-ghost" style="font-size:.75rem;height:32px;" onclick="openQr('${r.y.id}','${r.t.id}','${r.l.id}',${r.n})">QR</button>
     </td></tr>`;
@@ -771,6 +792,9 @@ async function init() {
   renderTermList();
   renderLevelList();
   loadR2Fields();
+  ['clYear','clTerm','clLevel'].forEach(id => {
+    document.getElementById(id).addEventListener('change', renderContentList);
+  });
 }
 init();
 </script>
