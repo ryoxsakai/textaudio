@@ -528,6 +528,9 @@ function delArr(arr, i, render) { cfg[arr].splice(i, 1); render(); }
 
 /* ── Save content settings ── */
 document.getElementById('saveContentBtn').addEventListener('click', async () => {
+  if (!cfg.years.length && !cfg.terms.length && !cfg.levels.length) {
+    toast('保存するコンテンツがありません', 'err'); return;
+  }
   const errs = [];
   cfg.years.forEach((y,i)  => { if (!y.name.trim()) errs.push(`年度${i+1}の表示名が空です`); if (!y.tag.trim()) errs.push(`年度${i+1}のタグが空です`); });
   cfg.terms.forEach((t,i)  => { if (!t.name.trim()) errs.push(`学期${i+1}の表示名が空です`); if (!t.tag.trim()) errs.push(`学期${i+1}のタグが空です`); });
@@ -560,12 +563,29 @@ document.getElementById('saveR2Btn').addEventListener('click', async () => {
   cfg.r2Bucket      = document.getElementById('r2Bucket').value.trim() || 'textaudio';
   cfg.r2WorkerUrl   = document.getElementById('r2WorkerUrl').value.trim().replace(/\/$/, '');
   persistLocal();
-  try {
-    await saveSettingsJson();
-    toast('R2設定を保存しました（LocalStorage + R2）');
-  } catch {
-    toast('R2設定をLocalStorageに保存しました');
+  // After saving credentials, reload settings.json from R2 to restore content settings
+  const fetchUrls = [...new Set([cfg.r2WorkerUrl, cfg.r2BaseUrl].filter(Boolean).map(u => u.replace(/\/$/, '')))];
+  let loaded = false;
+  for (const url of fetchUrls) {
+    try {
+      const r = await fetch(`${url}/settings.json`);
+      if (r.ok) {
+        const j = await r.json();
+        cfg.years        = j.years  || cfg.years  || [];
+        cfg.terms        = j.terms  || cfg.terms  || [];
+        cfg.levels       = j.levels || cfg.levels || [];
+        if (j.defaultYear)  cfg.defaultYear  = j.defaultYear;
+        if (j.defaultTerm)  cfg.defaultTerm  = j.defaultTerm;
+        if (j.defaultLevel) cfg.defaultLevel = j.defaultLevel;
+        if (j.lessonTitles) cfg.lessonTitles = j.lessonTitles;
+        persistLocal();
+        renderYearList(); renderTermList(); renderLevelList();
+        loaded = true;
+        break;
+      }
+    } catch {}
   }
+  toast(loaded ? 'R2設定を保存し、コンテンツ設定を復元しました' : 'R2設定をLocalStorageに保存しました（settings.json未取得）');
 });
 document.getElementById('testConnBtn').addEventListener('click', async () => {
   const url = document.getElementById('r2BaseUrl').value.trim().replace(/\/$/, '');
