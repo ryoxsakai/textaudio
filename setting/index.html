@@ -319,15 +319,20 @@ function toast(msg, type = 'ok') {
 
 /* ── Tabs ── */
 document.querySelectorAll('.tab-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
-    btn.classList.add('active');
-    document.getElementById(btn.dataset.tab).classList.add('active');
-    if (btn.dataset.tab === 't4') renderContentList();
-    if (btn.dataset.tab === 't3') populateUploadSelects();
-  });
+  btn.addEventListener('click', () => switchTab(btn.dataset.tab));
 });
+
+function switchTab(tabId) {
+  const btn = document.querySelector(`.tab-btn[data-tab="${tabId}"]`);
+  if (!btn) return;
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById(tabId).classList.add('active');
+  localStorage.setItem('dke_active_tab', tabId);
+  if (tabId === 't4') renderContentList();
+  if (tabId === 't3') populateUploadSelects();
+}
 
 /* ── Load settings ── */
 async function loadAllSettings() {
@@ -823,6 +828,8 @@ async function init() {
   renderTermList();
   renderLevelList();
   loadR2Fields();
+  const savedTab = localStorage.getItem('dke_active_tab');
+  if (savedTab) switchTab(savedTab);
 }
 init();
 </script>
