@@ -2,406 +2,361 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>第7講</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>DKE Medical English</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: #f0f2f5;
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 16px;
+    :root {
+      --navy: #1a4a6b;
+      --navy-dk: #123452;
+      --navy-lt: #e8f0f7;
+      --green: #388e3c;
+      --green-lt: #e8f5e9;
+      --red: #d32f2f;
+      --border: #dde2e8;
+      --bg: #f4f6fa;
+      --text: #1a1a2e;
+      --muted: #6b7280;
     }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
 
-    .player {
-      background: #fff;
-      border-radius: 16px;
-      box-shadow: 0 4px 24px rgba(0,0,0,0.10);
-      padding: 28px 24px 24px;
-      width: 100%;
-      max-width: 480px;
-    }
+    /* Header */
+    .app-header { background: var(--navy); color: #fff; padding: 0 16px; height: 56px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 10; box-shadow: 0 2px 8px rgba(0,0,0,.15); }
+    .app-title { font-size: 1rem; font-weight: 700; }
+    .badge { font-size: .78rem; background: rgba(255,255,255,.18); padding: 4px 12px; border-radius: 20px; white-space: nowrap; }
 
-    .title {
-      font-size: 1.2rem;
-      font-weight: 600;
-      color: #1a1a2e;
-      margin-bottom: 20px;
-      text-align: center;
-    }
+    /* Filters */
+    .filter-bar { background: #fff; padding: 10px 16px; display: flex; gap: 10px; border-bottom: 1px solid var(--border); }
+    .filter-bar select { flex: 1; height: 40px; padding: 0 10px; border: 1px solid var(--border); border-radius: 8px; font-size: .875rem; background: #fff; color: var(--text); }
 
-    /* Progress bar */
-    .progress-wrap {
-      position: relative;
-      height: 44px;
-      display: flex;
-      align-items: center;
-      cursor: pointer;
-      touch-action: none;
-    }
+    /* Table */
+    .table-scroll { overflow-x: auto; padding: 16px; }
+    table { width: 100%; min-width: 360px; border-collapse: collapse; background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,.06); }
+    thead th { background: var(--navy); color: #fff; padding: 12px 14px; text-align: left; font-size: .8rem; font-weight: 600; }
+    tbody td { padding: 11px 14px; border-bottom: 1px solid #f0f2f6; font-size: .875rem; vertical-align: middle; }
+    tbody tr:last-child td { border-bottom: none; }
+    tbody tr.done-row { background: var(--green-lt); }
+    .ops { display: flex; gap: 6px; }
 
-    .progress-track {
-      position: absolute;
-      left: 0; right: 0;
-      height: 6px;
-      background: #e0e0e0;
-      border-radius: 3px;
-      overflow: hidden;
-    }
+    /* Buttons */
+    .btn { display: inline-flex; align-items: center; justify-content: center; border: none; border-radius: 8px; cursor: pointer; font-size: .8rem; font-weight: 600; padding: 0 12px; height: 36px; min-width: 44px; white-space: nowrap; -webkit-tap-highlight-color: transparent; transition: opacity .15s; }
+    .btn:active { opacity: .7; }
+    .btn-play  { background: var(--navy); color: #fff; }
+    .btn-done  { background: #f0f2f6; color: var(--muted); }
+    .btn-done.is-done { background: var(--green); color: #fff; }
 
-    .progress-fill {
-      height: 100%;
-      width: 0%;
-      background: #4f8ef7;
-      border-radius: 3px;
-      transition: width 0.1s linear;
-    }
+    /* Message */
+    .msg-c { text-align: center; padding: 48px 20px; color: var(--muted); font-size: .9rem; }
+    .msg-c.err { color: var(--red); }
 
-    .progress-thumb {
-      position: absolute;
-      width: 18px;
-      height: 18px;
-      background: #4f8ef7;
-      border-radius: 50%;
-      top: 50%;
-      transform: translate(-50%, -50%);
-      left: 0%;
-      box-shadow: 0 1px 4px rgba(79,142,247,0.4);
-      transition: left 0.1s linear;
-    }
+    /* Footer */
+    footer { text-align: center; padding: 20px; font-size: .78rem; color: var(--muted); }
+    footer a { color: var(--navy); text-decoration: none; }
 
-    .time-row {
-      display: flex;
-      justify-content: space-between;
-      font-size: 0.78rem;
-      color: #888;
-      margin-top: 2px;
-      margin-bottom: 16px;
-    }
+    /* Overlay */
+    .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 200; align-items: flex-end; }
+    .overlay.open { display: flex; }
+    .sheet { width: 100%; max-height: 92dvh; background: #fff; border-radius: 20px 20px 0 0; padding: 20px 20px 32px; overflow-y: auto; }
 
-    /* Main controls */
-    .controls {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      margin-bottom: 16px;
-    }
+    /* Player */
+    .pl-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; }
+    .pl-title { font-size: .95rem; font-weight: 700; color: var(--navy); line-height: 1.4; flex: 1; padding-right: 12px; }
+    .btn-close { width: 32px; height: 32px; border: none; background: #f0f2f6; border-radius: 50%; font-size: 1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 
-    .btn {
-      border: none;
-      background: none;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: 50%;
-      min-width: 44px;
-      min-height: 44px;
-      font-size: 0.8rem;
-      font-weight: 600;
-      color: #4f8ef7;
-      transition: background 0.15s;
-      -webkit-tap-highlight-color: transparent;
-    }
+    /* Progress */
+    .prog-wrap { position: relative; height: 44px; display: flex; align-items: center; cursor: pointer; touch-action: none; user-select: none; }
+    .prog-track { position: absolute; left: 0; right: 0; height: 6px; background: #e2e6ea; border-radius: 3px; overflow: hidden; }
+    .prog-fill { height: 100%; width: 0; background: var(--navy); border-radius: 3px; }
+    .prog-thumb { position: absolute; width: 18px; height: 18px; background: var(--navy); border-radius: 50%; top: 50%; left: 0; transform: translate(-50%,-50%); box-shadow: 0 1px 4px rgba(26,74,107,.4); }
+    .time-row { display: flex; justify-content: space-between; font-size: .75rem; color: var(--muted); margin-bottom: 16px; }
 
-    .btn:active { background: #e8f0fe; }
+    /* Controls */
+    .ctrl-row { display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 16px; }
+    .ctrl-btn { display: flex; align-items: center; justify-content: center; border: none; background: none; border-radius: 50%; min-width: 44px; min-height: 44px; cursor: pointer; color: var(--navy); -webkit-tap-highlight-color: transparent; }
+    .ctrl-btn:active { background: var(--navy-lt); }
+    .ctrl-btn-main { background: var(--navy); color: #fff; min-width: 60px; min-height: 60px; box-shadow: 0 2px 12px rgba(26,74,107,.3); }
+    .ctrl-btn-main:active { background: var(--navy-dk); }
+    .ctrl-btn-stop { color: #e53935; }
 
-    .btn svg { display: block; }
-
-    .btn-play {
-      background: #4f8ef7;
-      color: #fff;
-      min-width: 60px;
-      min-height: 60px;
-      box-shadow: 0 2px 12px rgba(79,142,247,0.35);
-    }
-
-    .btn-play:active { background: #3a78e0; }
-
-    .btn-skip { color: #555; }
-    .btn-stop { color: #e05252; }
-
-    /* Speed buttons */
-    .speed-section {
-      margin-bottom: 16px;
-    }
-
-    .speed-slider-row {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 8px;
-    }
-
-    .speed-label {
-      font-size: 0.78rem;
-      color: #888;
-      flex-shrink: 0;
-    }
-
-    .speed-value {
-      font-size: 0.82rem;
-      font-weight: 700;
-      color: #4f8ef7;
-      flex-shrink: 0;
-      width: 3em;
-      text-align: right;
-    }
-
-    .speed-row {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
-    }
-
-    .btn-speed {
-      border: 1.5px solid #d0d0d0;
-      background: #fff;
-      color: #555;
-      font-size: 0.78rem;
-      font-weight: 600;
-      padding: 6px 10px;
-      border-radius: 20px;
-      cursor: pointer;
-      min-height: 36px;
-      transition: all 0.15s;
-      -webkit-tap-highlight-color: transparent;
-    }
-
-    .btn-speed.active {
-      border-color: #4f8ef7;
-      background: #4f8ef7;
-      color: #fff;
-    }
-
-    .btn-speed:active { opacity: 0.7; }
+    /* Speed */
+    .speed-wrap { margin-bottom: 14px; }
+    .speed-slider-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+    .lbl-sm { font-size: .75rem; color: var(--muted); flex-shrink: 0; }
+    .speed-val { font-size: .8rem; font-weight: 700; color: var(--navy); width: 3.2em; text-align: right; flex-shrink: 0; }
+    .speed-preset-row { display: flex; gap: 6px; justify-content: center; }
+    .btn-preset { border: 1.5px solid var(--border); background: #fff; color: #555; font-size: .78rem; font-weight: 600; padding: 5px 10px; border-radius: 20px; cursor: pointer; min-height: 36px; -webkit-tap-highlight-color: transparent; }
+    .btn-preset.active { border-color: var(--navy); background: var(--navy); color: #fff; }
 
     /* Volume */
-    .volume-row {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
+    .vol-row { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+    .vol-icon { color: var(--muted); flex-shrink: 0; }
+    .vol-note { font-size: .75rem; color: #aaa; text-align: center; margin-bottom: 8px; }
+    input[type=range] { -webkit-appearance: none; appearance: none; flex: 1; height: 6px; border-radius: 3px; background: #e2e6ea; outline: none; cursor: pointer; }
+    input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 20px; height: 20px; border-radius: 50%; background: var(--navy); cursor: pointer; }
+    input[type=range]::-moz-range-thumb { width: 20px; height: 20px; border-radius: 50%; background: var(--navy); cursor: pointer; border: none; }
 
-    .volume-icon { color: #888; flex-shrink: 0; }
-
-    input[type=range] {
-      -webkit-appearance: none;
-      appearance: none;
-      flex: 1;
-      height: 6px;
-      border-radius: 3px;
-      background: #e0e0e0;
-      outline: none;
-      cursor: pointer;
-    }
-
-    input[type=range]::-webkit-slider-thumb {
-      -webkit-appearance: none;
-      width: 20px;
-      height: 20px;
-      border-radius: 50%;
-      background: #4f8ef7;
-      cursor: pointer;
-      box-shadow: 0 1px 4px rgba(79,142,247,0.4);
-    }
-
-    input[type=range]::-moz-range-thumb {
-      width: 20px;
-      height: 20px;
-      border-radius: 50%;
-      background: #4f8ef7;
-      cursor: pointer;
-      border: none;
-    }
+    /* Mark done */
+    .btn-mark-done { width: 100%; height: 48px; border: none; border-radius: 12px; font-size: .95rem; font-weight: 700; cursor: pointer; background: var(--green); color: #fff; -webkit-tap-highlight-color: transparent; transition: opacity .15s; }
+    .btn-mark-done:active { opacity: .8; }
+    .btn-mark-done.is-done { background: #e0e0e0; color: var(--muted); }
   </style>
 </head>
 <body>
-  <div class="player">
-    <div class="title">第7講</div>
 
-    <audio id="audio" src="https://ryoxsakai.github.io/textaudio/%E7%AC%AC7%E8%AC%9B.mp3" preload="metadata"></audio>
+<header class="app-header">
+  <span class="app-title">DKE Medical English</span>
+  <span class="badge" id="completionBadge">完了: 0 / 0</span>
+</header>
 
-    <!-- Progress bar -->
-    <div class="progress-wrap" id="progressWrap">
-      <div class="progress-track">
-        <div class="progress-fill" id="progressFill"></div>
-      </div>
-      <div class="progress-thumb" id="progressThumb"></div>
+<div class="filter-bar">
+  <select id="filterTerm"><option value="">学期: 全て</option></select>
+  <select id="filterLevel"><option value="">レベル: 全て</option></select>
+</div>
+
+<div class="table-scroll">
+  <div id="tableContainer"><div class="msg-c">読み込み中…</div></div>
+</div>
+
+<footer><a href="setting/">⚙ 設定</a></footer>
+
+<!-- Player modal -->
+<div class="overlay" id="overlay">
+  <div class="sheet">
+    <div class="pl-header">
+      <div class="pl-title" id="playerTitle">-</div>
+      <button class="btn-close" id="btnClose">✕</button>
     </div>
 
-    <div class="time-row">
-      <span id="currentTime">0:00</span>
-      <span id="totalTime">0:00</span>
-    </div>
+    <audio id="audio" preload="metadata"></audio>
 
-    <!-- Controls -->
-    <div class="controls">
-      <button class="btn btn-skip" id="btnBack" aria-label="-10秒">
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
-          <path d="M12 5V2L7 7l5 5V9c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z" fill="currentColor"/>
-          <text x="8.5" y="16" font-size="6" font-weight="bold" fill="currentColor" font-family="sans-serif">10</text>
-        </svg>
+    <div class="prog-wrap" id="progWrap">
+      <div class="prog-track"><div class="prog-fill" id="progFill"></div></div>
+      <div class="prog-thumb" id="progThumb"></div>
+    </div>
+    <div class="time-row"><span id="curTime">0:00</span><span id="durTime">0:00</span></div>
+
+    <div class="ctrl-row">
+      <button class="ctrl-btn" id="btnBack" aria-label="-10秒">
+        <svg width="30" height="30" viewBox="0 0 24 24"><path d="M12 5V2L7 7l5 5V9c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z" fill="currentColor"/><text x="9" y="16.5" font-size="5.5" font-weight="bold" fill="currentColor" font-family="sans-serif" text-anchor="middle">10</text></svg>
       </button>
-
-      <button class="btn btn-stop" id="btnStop" aria-label="停止">
+      <button class="ctrl-btn ctrl-btn-stop" id="btnStop" aria-label="停止">
         <svg width="28" height="28" viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="14" rx="2" fill="currentColor"/></svg>
       </button>
-
-      <button class="btn btn-play" id="btnPlay" aria-label="再生">
-        <svg id="iconPlay" width="28" height="28" viewBox="0 0 24 24"><polygon points="6,4 20,12 6,20" fill="currentColor"/></svg>
+      <button class="ctrl-btn ctrl-btn-main" id="btnPlay" aria-label="再生">
+        <svg id="iconPlay" width="28" height="28" viewBox="0 0 24 24"><polygon points="7,4 21,12 7,20" fill="currentColor"/></svg>
         <svg id="iconPause" width="28" height="28" viewBox="0 0 24 24" style="display:none"><rect x="5" y="4" width="4" height="16" rx="1" fill="currentColor"/><rect x="15" y="4" width="4" height="16" rx="1" fill="currentColor"/></svg>
       </button>
-
-      <button class="btn btn-skip" id="btnFwd" aria-label="+10秒">
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
-          <path d="M12 5V2l5 5-5 5V9c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6h2c0 4.42-3.58 8-8 8s-8-3.58-8-8 3.58-8 8-8z" fill="currentColor"/>
-          <text x="8.5" y="16" font-size="6" font-weight="bold" fill="currentColor" font-family="sans-serif">10</text>
-        </svg>
+      <button class="ctrl-btn" id="btnFwd" aria-label="+10秒">
+        <svg width="30" height="30" viewBox="0 0 24 24"><path d="M12 5V2l5 5-5 5V9c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6h2c0 4.42-3.58 8-8 8s-8-3.58-8-8 3.58-8 8-8z" fill="currentColor"/><text x="15" y="16.5" font-size="5.5" font-weight="bold" fill="currentColor" font-family="sans-serif" text-anchor="middle">10</text></svg>
       </button>
     </div>
 
-    <!-- Speed -->
-    <div class="speed-section">
+    <div class="speed-wrap">
       <div class="speed-slider-row">
-        <span class="speed-label">速度</span>
-        <input type="range" id="speedSlider" min="0.5" max="2" step="0.05" value="1" aria-label="再生速度">
-        <span class="speed-value" id="speedValue">1.0x</span>
+        <span class="lbl-sm">速度</span>
+        <input type="range" id="speedSlider" min="0.5" max="2" step="0.05" value="1">
+        <span class="speed-val" id="speedVal">1.0x</span>
       </div>
-      <div class="speed-row">
-        <button class="btn-speed" data-speed="0.75">0.75x</button>
-        <button class="btn-speed active" data-speed="1">1.0x</button>
-        <button class="btn-speed" data-speed="1.25">1.25x</button>
-        <button class="btn-speed" data-speed="1.5">1.5x</button>
+      <div class="speed-preset-row">
+        <button class="btn-preset" data-speed="0.75">0.75x</button>
+        <button class="btn-preset active" data-speed="1">1.0x</button>
+        <button class="btn-preset" data-speed="1.25">1.25x</button>
+        <button class="btn-preset" data-speed="1.5">1.5x</button>
       </div>
     </div>
 
-    <!-- Volume -->
-    <p id="volumeNote" style="display:none;font-size:0.75rem;color:#aaa;text-align:center;margin-bottom:4px;">音量は端末のボタンで調整してください</p>
-    <div class="volume-row" id="volumeRow">
-      <span class="volume-icon">
-        <svg width="20" height="20" viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z" fill="currentColor"/></svg>
-      </span>
-      <input type="range" id="volume" min="0" max="1" step="0.01" value="1" aria-label="音量">
+    <p class="vol-note" id="volNote" style="display:none">音量は端末のボタンで調整してください</p>
+    <div class="vol-row" id="volRow">
+      <span class="vol-icon"><svg width="20" height="20" viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z" fill="currentColor"/></svg></span>
+      <input type="range" id="volSlider" min="0" max="1" step="0.01" value="1">
     </div>
+
+    <button class="btn-mark-done" id="btnMarkDone">✓ 完了にする</button>
   </div>
+</div>
 
-  <script>
-    const audio = document.getElementById('audio');
-    const btnPlay = document.getElementById('btnPlay');
-    const btnStop = document.getElementById('btnStop');
-    const btnBack = document.getElementById('btnBack');
-    const btnFwd = document.getElementById('btnFwd');
-    const iconPlay = document.getElementById('iconPlay');
-    const iconPause = document.getElementById('iconPause');
-    const progressWrap = document.getElementById('progressWrap');
-    const progressFill = document.getElementById('progressFill');
-    const progressThumb = document.getElementById('progressThumb');
-    const currentTimeEl = document.getElementById('currentTime');
-    const totalTimeEl = document.getElementById('totalTime');
-    const volumeEl = document.getElementById('volume');
+<script>
+const SK = 'dke_settings';
+const DK = 'dke_completed';
+const DEFAULTS = {
+  r2BaseUrl: 'https://ryoxsakai.github.io/textaudio',
+  terms:  [{ id:'t1', name:'前期', tag:'term1', lessons:3 }, { id:'t2', name:'夏期', tag:'term2', lessons:2 }],
+  levels: [{ id:'l1', name:'High 読解', tag:'high_reading' }, { id:'l2', name:'High 構文', tag:'high_structure' }, { id:'l3', name:'Standard 読解', tag:'standard_reading' }, { id:'l4', name:'Standard 構文', tag:'standard_structure' }]
+};
 
-    function fmt(s) {
-      const m = Math.floor(s / 60);
-      const ss = Math.floor(s % 60);
-      return m + ':' + String(ss).padStart(2, '0');
+let cfg = null, done = {}, cur = null;
+
+function loadDone() { try { done = JSON.parse(localStorage.getItem(DK) || '{}'); } catch { done = {}; } }
+function saveDone() { localStorage.setItem(DK, JSON.stringify(done)); }
+function mk(t, l, n) { return `${t}_${l}_${n}`; }
+
+async function loadCfg() {
+  let local = null;
+  try { local = JSON.parse(localStorage.getItem(SK)); } catch {}
+  const base = (local && local.r2BaseUrl) || DEFAULTS.r2BaseUrl;
+  try {
+    const r = await fetch(`${base}/settings.json`);
+    if (r.ok) {
+      const j = await r.json();
+      cfg = j;
+      localStorage.setItem(SK, JSON.stringify(Object.assign({}, local || {}, j)));
+      return;
     }
+  } catch {}
+  if (local && local.terms && local.levels) { cfg = local; return; }
+  cfg = Object.assign({}, DEFAULTS);
+}
 
-    function updateProgress() {
-      const pct = audio.duration ? (audio.currentTime / audio.duration) * 100 : 0;
-      progressFill.style.width = pct + '%';
-      progressThumb.style.left = pct + '%';
-      currentTimeEl.textContent = fmt(audio.currentTime);
-    }
+function allRows() {
+  const rows = [];
+  for (const t of cfg.terms) for (const l of cfg.levels) for (let n = 1; n <= t.lessons; n++)
+    rows.push({ t, l, n, key: mk(t.id, l.id, n) });
+  return rows;
+}
+function audioUrl(t, l, n) { return `${cfg.r2BaseUrl}/${t.tag}/${l.tag}/lesson${n}.mp3`; }
 
-    audio.addEventListener('timeupdate', updateProgress);
-    audio.addEventListener('loadedmetadata', () => {
-      totalTimeEl.textContent = fmt(audio.duration);
-      updateProgress();
-    });
-    audio.addEventListener('ended', () => {
-      iconPlay.style.display = '';
-      iconPause.style.display = 'none';
-    });
+function updateBadge() {
+  const rows = allRows();
+  document.getElementById('completionBadge').textContent = `完了: ${rows.filter(r => done[r.key]).length} / ${rows.length}`;
+}
 
-    // Play / Pause
-    btnPlay.addEventListener('click', () => {
-      if (audio.paused) {
-        audio.play();
-        iconPlay.style.display = 'none';
-        iconPause.style.display = '';
-      } else {
-        audio.pause();
-        iconPlay.style.display = '';
-        iconPause.style.display = 'none';
-      }
-    });
+function render() {
+  const tF = document.getElementById('filterTerm').value;
+  const lF = document.getElementById('filterLevel').value;
+  const rows = allRows().filter(r => (!tF || r.t.id === tF) && (!lF || r.l.id === lF));
+  updateBadge();
+  const con = document.getElementById('tableContainer');
+  if (!rows.length) { con.innerHTML = '<div class="msg-c">該当するコンテンツがありません</div>'; return; }
+  let h = '<table><thead><tr><th>学期</th><th>レベル</th><th>講</th><th>操作</th></tr></thead><tbody>';
+  for (const r of rows) {
+    const d = !!done[r.key];
+    h += `<tr class="${d ? 'done-row' : ''}"><td>${r.t.name}</td><td>${r.l.name}</td><td>第${r.n}講</td><td class="ops">
+      <button class="btn btn-play" onclick="openPlayer('${r.t.id}','${r.l.id}',${r.n})">▶ 再生</button>
+      <button class="btn btn-done ${d ? 'is-done' : ''}" onclick="toggleDone('${r.t.id}','${r.l.id}',${r.n})">${d ? '✓ 完了' : '完了'}</button>
+    </td></tr>`;
+  }
+  con.innerHTML = h + '</tbody></table>';
+}
 
-    // Stop
-    btnStop.addEventListener('click', () => {
-      audio.pause();
-      audio.currentTime = 0;
-      iconPlay.style.display = '';
-      iconPause.style.display = 'none';
-      updateProgress();
-    });
+function populateFilters() {
+  const tSel = document.getElementById('filterTerm'), lSel = document.getElementById('filterLevel');
+  const tv = tSel.value, lv = lSel.value;
+  tSel.innerHTML = '<option value="">学期: 全て</option>' + cfg.terms.map(t => `<option value="${t.id}">${t.name}</option>`).join('');
+  lSel.innerHTML = '<option value="">レベル: 全て</option>' + cfg.levels.map(l => `<option value="${l.id}">${l.name}</option>`).join('');
+  tSel.value = tv; lSel.value = lv;
+}
 
-    // Skip
-    btnBack.addEventListener('click', () => { audio.currentTime = Math.max(0, audio.currentTime - 10); });
-    btnFwd.addEventListener('click', () => { audio.currentTime = Math.min(audio.duration || 0, audio.currentTime + 10); });
+function toggleDone(tId, lId, n) {
+  const k = mk(tId, lId, n);
+  if (done[k]) delete done[k]; else done[k] = true;
+  saveDone(); render();
+  if (cur && cur.tId === tId && cur.lId === lId && cur.n === n) refreshMarkBtn();
+}
 
-    // Progress bar seek
-    function seekFromEvent(clientX) {
-      const rect = progressWrap.getBoundingClientRect();
-      const pct = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width));
-      if (audio.duration) audio.currentTime = pct * audio.duration;
-      updateProgress();
-    }
+/* ── Player ── */
+const audio   = document.getElementById('audio');
+const overlay = document.getElementById('overlay');
 
-    let dragging = false;
+function fmt(s) { return isFinite(s) ? Math.floor(s/60) + ':' + String(Math.floor(s%60)).padStart(2,'0') : '0:00'; }
+function updProg() {
+  const p = audio.duration ? (audio.currentTime / audio.duration) * 100 : 0;
+  document.getElementById('progFill').style.width = p + '%';
+  document.getElementById('progThumb').style.left = p + '%';
+  document.getElementById('curTime').textContent = fmt(audio.currentTime);
+}
+audio.addEventListener('timeupdate', updProg);
+audio.addEventListener('loadedmetadata', () => { document.getElementById('durTime').textContent = fmt(audio.duration); updProg(); });
+audio.addEventListener('ended', () => setPI(false));
 
-    progressWrap.addEventListener('mousedown', e => { dragging = true; seekFromEvent(e.clientX); });
-    window.addEventListener('mousemove', e => { if (dragging) seekFromEvent(e.clientX); });
-    window.addEventListener('mouseup', () => { dragging = false; });
+function setPI(playing) {
+  document.getElementById('iconPlay').style.display  = playing ? 'none' : '';
+  document.getElementById('iconPause').style.display = playing ? '' : 'none';
+}
 
-    progressWrap.addEventListener('touchstart', e => { dragging = true; seekFromEvent(e.touches[0].clientX); }, { passive: true });
-    window.addEventListener('touchmove', e => { if (dragging) seekFromEvent(e.touches[0].clientX); }, { passive: true });
-    window.addEventListener('touchend', () => { dragging = false; });
+document.getElementById('btnPlay').addEventListener('click', () => {
+  if (audio.paused) { audio.play(); setPI(true); } else { audio.pause(); setPI(false); }
+});
+document.getElementById('btnStop').addEventListener('click', () => { audio.pause(); audio.currentTime = 0; setPI(false); updProg(); });
+document.getElementById('btnBack').addEventListener('click', () => { audio.currentTime = Math.max(0, audio.currentTime - 10); });
+document.getElementById('btnFwd').addEventListener('click',  () => { audio.currentTime = Math.min(audio.duration || 0, audio.currentTime + 10); });
 
-    // Speed
-    const speedSlider = document.getElementById('speedSlider');
-    const speedValue = document.getElementById('speedValue');
-    const presetSpeeds = [0.75, 1, 1.25, 1.5];
+let seeking = false;
+function seekTo(cx) {
+  const r = document.getElementById('progWrap').getBoundingClientRect();
+  const p = Math.min(1, Math.max(0, (cx - r.left) / r.width));
+  if (audio.duration) audio.currentTime = p * audio.duration;
+  updProg();
+}
+const pw = document.getElementById('progWrap');
+pw.addEventListener('mousedown',  e => { seeking = true; seekTo(e.clientX); });
+window.addEventListener('mousemove', e => { if (seeking) seekTo(e.clientX); });
+window.addEventListener('mouseup',   () => { seeking = false; });
+pw.addEventListener('touchstart', e => { seeking = true; seekTo(e.touches[0].clientX); }, { passive: true });
+window.addEventListener('touchmove', e => { if (seeking) seekTo(e.touches[0].clientX); }, { passive: true });
+window.addEventListener('touchend',  () => { seeking = false; });
 
-    function setSpeed(rate) {
-      audio.playbackRate = rate;
-      speedSlider.value = rate;
-      speedValue.textContent = (Math.round(rate * 100) / 100).toFixed(2).replace(/\.?0+$/, '') + 'x';
-      document.querySelectorAll('.btn-speed').forEach(b => {
-        b.classList.toggle('active', parseFloat(b.dataset.speed) === rate);
-      });
-    }
+function setSpeed(v) {
+  audio.playbackRate = v;
+  document.getElementById('speedSlider').value = v;
+  document.getElementById('speedVal').textContent = (Math.round(v * 100) / 100).toFixed(2).replace(/\.?0+$/, '') + 'x';
+  document.querySelectorAll('.btn-preset').forEach(b => b.classList.toggle('active', parseFloat(b.dataset.speed) === v));
+}
+document.getElementById('speedSlider').addEventListener('input', e => setSpeed(parseFloat(e.target.value)));
+document.querySelectorAll('.btn-preset').forEach(b => b.addEventListener('click', () => setSpeed(parseFloat(b.dataset.speed))));
 
-    speedSlider.addEventListener('input', () => setSpeed(parseFloat(speedSlider.value)));
+const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+if (isIOS) { document.getElementById('volRow').style.display = 'none'; document.getElementById('volNote').style.display = 'block'; }
+else { document.getElementById('volSlider').addEventListener('input', e => { audio.volume = parseFloat(e.target.value); }); }
 
-    document.querySelectorAll('.btn-speed').forEach(btn => {
-      btn.addEventListener('click', () => setSpeed(parseFloat(btn.dataset.speed)));
-    });
+function refreshMarkBtn() {
+  if (!cur) return;
+  const d = !!done[mk(cur.tId, cur.lId, cur.n)];
+  const btn = document.getElementById('btnMarkDone');
+  btn.textContent = d ? '✓ 完了済み（タップで取り消し）' : '✓ 完了にする';
+  btn.className = 'btn-mark-done' + (d ? ' is-done' : '');
+}
+document.getElementById('btnMarkDone').addEventListener('click', () => {
+  if (!cur) return;
+  toggleDone(cur.tId, cur.lId, cur.n);
+  refreshMarkBtn();
+});
 
-    // Volume — iOS does not support programmatic volume control
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-    if (isIOS) {
-      document.getElementById('volumeRow').style.display = 'none';
-      document.getElementById('volumeNote').style.display = 'block';
-    } else {
-      volumeEl.addEventListener('input', () => { audio.volume = parseFloat(volumeEl.value); });
-    }
-  </script>
+function openPlayer(tId, lId, n) {
+  const t = cfg.terms.find(x => x.id === tId), l = cfg.levels.find(x => x.id === lId);
+  if (!t || !l) return;
+  cur = { tId, lId, n };
+  document.getElementById('playerTitle').textContent = `${t.name} / ${l.name} / 第${n}講`;
+  audio.src = audioUrl(t, l, n);
+  audio.currentTime = 0;
+  setPI(false);
+  document.getElementById('durTime').textContent = '0:00';
+  document.getElementById('curTime').textContent = '0:00';
+  setSpeed(1);
+  refreshMarkBtn();
+  overlay.classList.add('open');
+}
+function closePlayer() { audio.pause(); overlay.classList.remove('open'); cur = null; }
+document.getElementById('btnClose').addEventListener('click', closePlayer);
+overlay.addEventListener('click', e => { if (e.target === overlay) closePlayer(); });
+
+function handleParams() {
+  const p = new URLSearchParams(location.search);
+  const tId = p.get('term'), lId = p.get('level'), n = parseInt(p.get('lesson'), 10);
+  if (!tId || !lId || !n) return;
+  const t = cfg.terms.find(x => x.id === tId), l = cfg.levels.find(x => x.id === lId);
+  if (!t || !l || n < 1 || n > t.lessons) return;
+  openPlayer(tId, lId, n);
+}
+
+async function init() {
+  loadDone();
+  try { await loadCfg(); }
+  catch { document.getElementById('tableContainer').innerHTML = '<div class="msg-c err">コンテンツを読み込めませんでした</div>'; return; }
+  populateFilters(); render(); handleParams();
+  document.getElementById('filterTerm').addEventListener('change', render);
+  document.getElementById('filterLevel').addEventListener('change', render);
+}
+init();
+</script>
 </body>
 </html>
