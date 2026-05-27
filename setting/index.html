@@ -260,9 +260,6 @@
       <button class="ctrl-btn" id="btnBack">
         <svg width="30" height="30" viewBox="0 0 24 24"><path d="M12 5V2L7 7l5 5V9c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z" fill="currentColor"/><text x="9" y="16.5" font-size="5.5" font-weight="bold" fill="currentColor" font-family="sans-serif" text-anchor="middle">10</text></svg>
       </button>
-      <button class="ctrl-btn ctrl-btn-stop" id="btnStop">
-        <svg width="28" height="28" viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="14" rx="2" fill="currentColor"/></svg>
-      </button>
       <button class="ctrl-btn ctrl-btn-main" id="btnPlay">
         <svg id="iconPlay" width="28" height="28" viewBox="0 0 24 24"><polygon points="7,4 21,12 7,20" fill="currentColor"/></svg>
         <svg id="iconPause" width="28" height="28" viewBox="0 0 24 24" style="display:none"><rect x="5" y="4" width="4" height="16" rx="1" fill="currentColor"/><rect x="15" y="4" width="4" height="16" rx="1" fill="currentColor"/></svg>
@@ -969,9 +966,9 @@ function renderContentList() {
       <td style="white-space:nowrap;">第${r.n}講</td>
       <td><input class="lt-input" data-key="${r.key}" value="${esc(title)}" placeholder="タイトル（任意）" style="width:100%;min-width:120px;height:32px;padding:0 8px;border:1px solid var(--border);border-radius:6px;font-size:.82rem;box-sizing:border-box;"></td>
       <td class="ops" style="white-space:nowrap;">
-        <button class="btn btn-navy" id="clplay-${r.key}" style="font-size:.75rem;height:32px;opacity:.35;" disabled onclick="openPlayer('${r.y.id}','${r.t.id}','${r.l.id}',${r.n})">▶</button>
-        <button class="btn btn-ghost" style="font-size:.75rem;height:32px;" onclick="openQr('${r.y.id}','${r.t.id}','${r.l.id}',${r.n})">QR</button>
-        <button class="btn btn-red" id="cldel-${r.key}" style="font-size:.75rem;height:32px;opacity:.35;" disabled onclick="deleteLesson('${r.y.id}','${r.t.id}','${r.l.id}',${r.n},'${r.key}')">削除</button>
+        <button class="btn btn-navy" id="clplay-${r.key}" style="padding:0;width:34px;height:34px;opacity:.35;" disabled onclick="openPlayer('${r.y.id}','${r.t.id}','${r.l.id}',${r.n})"><svg width="13" height="13" viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21" fill="currentColor"/></svg></button>
+        <button class="btn btn-ghost" style="padding:0;width:34px;height:34px;" onclick="openQr('${r.y.id}','${r.t.id}','${r.l.id}',${r.n})"><svg width="14" height="14" viewBox="0 0 10 10"><rect x=".3" y=".3" width="3.7" height="3.7" fill="none" stroke="currentColor" stroke-width=".7"/><rect x="1.3" y="1.3" width="1.7" height="1.7" fill="currentColor"/><rect x="6" y=".3" width="3.7" height="3.7" fill="none" stroke="currentColor" stroke-width=".7"/><rect x="7" y="1.3" width="1.7" height="1.7" fill="currentColor"/><rect x=".3" y="6" width="3.7" height="3.7" fill="none" stroke="currentColor" stroke-width=".7"/><rect x="1.3" y="7" width="1.7" height="1.7" fill="currentColor"/><rect x="6.2" y="6.2" width="1.4" height="1.4" fill="currentColor"/><rect x="8.4" y="6.2" width="1.4" height="1.4" fill="currentColor"/><rect x="6.2" y="8.4" width="1.4" height="1.4" fill="currentColor"/><rect x="8.4" y="8.4" width="1.4" height="1.4" fill="currentColor"/></svg></button>
+        <button class="btn btn-red" id="cldel-${r.key}" style="padding:0;width:34px;height:34px;opacity:.35;" disabled onclick="deleteLesson('${r.y.id}','${r.t.id}','${r.l.id}',${r.n},'${r.key}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg></button>
       </td>
     </tr>`;
   }
@@ -1049,7 +1046,6 @@ function setPI(playing) {
 document.getElementById('btnPlay').addEventListener('click', () => {
   if (audio.paused) { audio.play(); setPI(true); } else { audio.pause(); setPI(false); }
 });
-document.getElementById('btnStop').addEventListener('click', () => { audio.pause(); audio.currentTime = 0; setPI(false); updProg(); });
 document.getElementById('btnBack').addEventListener('click', () => { audio.currentTime = Math.max(0, audio.currentTime - 10); });
 document.getElementById('btnFwd').addEventListener('click',  () => { audio.currentTime = Math.min(audio.duration||0, audio.currentTime+10); });
 

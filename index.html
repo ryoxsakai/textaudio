@@ -119,9 +119,6 @@
       <button class="ctrl-btn" id="btnBack">
         <svg width="30" height="30" viewBox="0 0 24 24"><path d="M12 5V2L7 7l5 5V9c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z" fill="currentColor"/><text x="9" y="16.5" font-size="5.5" font-weight="bold" fill="currentColor" font-family="sans-serif" text-anchor="middle">10</text></svg>
       </button>
-      <button class="ctrl-btn ctrl-btn-stop" id="btnStop">
-        <svg width="28" height="28" viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="14" rx="2" fill="currentColor"/></svg>
-      </button>
       <button class="ctrl-btn ctrl-btn-main" id="btnPlay">
         <svg id="iconPlay" width="28" height="28" viewBox="0 0 24 24"><polygon points="7,4 21,12 7,20" fill="currentColor"/></svg>
         <svg id="iconPause" width="28" height="28" viewBox="0 0 24 24" style="display:none"><rect x="5" y="4" width="4" height="16" rx="1" fill="currentColor"/><rect x="15" y="4" width="4" height="16" rx="1" fill="currentColor"/></svg>
@@ -231,18 +228,19 @@ function render() {
   updateBadge();
   const con = document.getElementById('tableContainer');
   if (!rows.length) { con.innerHTML = '<div class="msg-c">該当するコンテンツがありません</div>'; return; }
-  let h = '<table><thead><tr><th>講</th><th>操作</th></tr></thead><tbody>';
+  let h = '<table><thead><tr><th>講</th><th>タイトル</th><th>操作</th></tr></thead><tbody>';
   for (const r of rows) {
     const d = !!done[r.key];
     const lessonTitle = cfg.lessonTitles?.[r.key] || '';
-    const lessonCell = lessonTitle
-      ? `第${r.n}講<br><span style="font-size:.75rem;color:var(--muted);font-weight:400;">${esc(lessonTitle)}</span>`
-      : `第${r.n}講`;
     h += `<tr class="${d ? 'done-row' : ''}">
-      <td>${lessonCell}</td>
+      <td style="white-space:nowrap;">第${r.n}講</td>
+      <td style="font-size:.82rem;color:var(--muted);">${lessonTitle ? esc(lessonTitle) : ''}</td>
       <td class="ops">
-        <button class="btn btn-play" id="play-${r.key}" style="opacity:.35;" disabled onclick="openPlayer('${r.y.id}','${r.t.id}','${r.l.id}',${r.n})">▶ 再生</button>
-        <button class="btn btn-done ${d ? 'is-done' : ''}" onclick="toggleDone('${r.y.id}','${r.t.id}','${r.l.id}',${r.n})">${d ? '✓ 完了' : '完了'}</button>
+        <button class="btn btn-play" id="play-${r.key}" style="opacity:.35;padding:0;width:36px;" disabled onclick="openPlayer('${r.y.id}','${r.t.id}','${r.l.id}',${r.n})"><svg width="14" height="14" viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21" fill="currentColor"/></svg></button>
+        <button class="btn btn-done ${d ? 'is-done' : ''}" style="padding:0;width:36px;" onclick="toggleDone('${r.y.id}','${r.t.id}','${r.l.id}',${r.n})">${d
+          ? `<svg width="15" height="15" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="currentColor"/><path d="M8 12l3 3 5-5" stroke="white" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`
+          : `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-5" stroke-linecap="round" stroke-linejoin="round"/></svg>`
+        }</button>
       </td>
     </tr>`;
   }
@@ -319,7 +317,6 @@ function setPI(playing) {
 document.getElementById('btnPlay').addEventListener('click', () => {
   if (audio.paused) { audio.play(); setPI(true); } else { audio.pause(); setPI(false); }
 });
-document.getElementById('btnStop').addEventListener('click', () => { audio.pause(); audio.currentTime = 0; setPI(false); updProg(); });
 document.getElementById('btnBack').addEventListener('click', () => { audio.currentTime = Math.max(0, audio.currentTime - 10); });
 document.getElementById('btnFwd').addEventListener('click',  () => { audio.currentTime = Math.min(audio.duration || 0, audio.currentTime + 10); });
 
