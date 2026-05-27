@@ -14,12 +14,10 @@
     }
     body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
 
-    /* Header */
     .app-header { background: var(--navy); color: #fff; padding: 0 16px; height: 56px; display: flex; align-items: center; gap: 12px; position: sticky; top: 0; z-index: 10; box-shadow: 0 2px 8px rgba(0,0,0,.15); }
     .app-header a { color: rgba(255,255,255,.8); text-decoration: none; font-size: 1.2rem; }
     .app-title { font-size: 1rem; font-weight: 700; }
 
-    /* Tabs */
     .tab-nav { display: flex; background: #fff; border-bottom: 2px solid var(--border); overflow-x: auto; scrollbar-width: none; }
     .tab-nav::-webkit-scrollbar { display: none; }
     .tab-btn { flex-shrink: 0; padding: 14px 16px; font-size: .82rem; font-weight: 600; color: var(--muted); border: none; background: none; cursor: pointer; border-bottom: 3px solid transparent; margin-bottom: -2px; white-space: nowrap; -webkit-tap-highlight-color: transparent; }
@@ -27,11 +25,9 @@
     .tab-panel { display: none; padding: 20px 16px 48px; }
     .tab-panel.active { display: block; }
 
-    /* Section */
     .sec-title { font-size: .9rem; font-weight: 700; color: var(--navy); margin-bottom: 12px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
     .sec-gap { margin-bottom: 28px; }
 
-    /* CRUD list */
     .crud-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
     .crud-item { background: #fff; border: 1px solid var(--border); border-radius: 10px; padding: 12px; }
     .crud-fields { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
@@ -42,50 +38,41 @@
     .crud-field input { height: 36px; padding: 0 8px; border: 1px solid var(--border); border-radius: 7px; font-size: .85rem; width: 100%; }
     .crud-actions { display: flex; gap: 6px; justify-content: flex-end; }
 
-    /* Buttons */
     .btn { display: inline-flex; align-items: center; justify-content: center; border: none; border-radius: 8px; cursor: pointer; font-size: .82rem; font-weight: 600; height: 36px; padding: 0 14px; min-width: 44px; -webkit-tap-highlight-color: transparent; transition: opacity .15s; white-space: nowrap; }
     .btn:active { opacity: .7; }
     .btn-navy  { background: var(--navy); color: #fff; }
     .btn-ghost { background: #f0f2f6; color: var(--muted); }
     .btn-red   { background: #fce8e8; color: var(--red); }
-    .btn-green { background: var(--green); color: #fff; }
     .btn-add   { background: var(--navy-lt); color: var(--navy); border: 1.5px dashed var(--navy); width: 100%; height: 40px; border-radius: 10px; }
 
-    /* Form */
     .form-row { display: flex; flex-direction: column; gap: 4px; margin-bottom: 14px; }
     .form-label { font-size: .8rem; font-weight: 600; color: var(--text); }
     .form-input { height: 44px; padding: 0 12px; border: 1px solid var(--border); border-radius: 9px; font-size: .9rem; width: 100%; background: #fff; }
     .form-hint { font-size: .72rem; color: var(--muted); }
-
-    /* Save button */
     .btn-save { width: 100%; height: 48px; font-size: .95rem; font-weight: 700; border-radius: 12px; margin-top: 8px; }
 
     /* Upload */
-    .upload-select-row { display: flex; gap: 10px; margin-bottom: 14px; }
-    .upload-select-row select { flex: 1; height: 44px; padding: 0 10px; border: 1px solid var(--border); border-radius: 9px; font-size: .875rem; background: #fff; }
+    .upload-select-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+    .upload-select-row select { flex: 1 1 calc(33% - 8px); min-width: 100px; height: 44px; padding: 0 10px; border: 1px solid var(--border); border-radius: 9px; font-size: .875rem; background: #fff; }
     .file-drop { border: 2px dashed var(--border); border-radius: 12px; background: #fff; padding: 24px; text-align: center; cursor: pointer; margin-bottom: 14px; color: var(--muted); font-size: .875rem; transition: border-color .15s; }
     .file-drop.drag-over { border-color: var(--navy); background: var(--navy-lt); }
     #fileInput { display: none; }
-
-    /* Preview table */
     .preview-wrap { overflow-x: auto; margin-bottom: 14px; }
-    .preview-table { width: 100%; border-collapse: collapse; font-size: .82rem; min-width: 300px; }
+    .preview-table { width: 100%; border-collapse: collapse; font-size: .82rem; min-width: 380px; }
     .preview-table th { background: var(--navy); color: #fff; padding: 8px 10px; text-align: left; }
-    .preview-table td { padding: 8px 10px; border-bottom: 1px solid #f0f2f6; }
+    .preview-table td { padding: 7px 10px; border-bottom: 1px solid #f0f2f6; vertical-align: middle; }
     .preview-table tr:last-child td { border-bottom: none; }
-    .preview-table tr:nth-child(even) td { background: #f8f9fb; }
-    .preview-path { color: var(--navy); font-family: monospace; }
-
-    /* Progress */
+    .preview-path { color: var(--navy); font-family: monospace; font-size: .78rem; }
+    .lesson-num-input { width: 60px; height: 32px; border: 1px solid var(--border); border-radius: 6px; text-align: center; font-size: .85rem; padding: 0 4px; }
     .progress-wrap { background: #e2e6ea; border-radius: 6px; height: 8px; overflow: hidden; margin-bottom: 8px; }
     .progress-bar { height: 100%; background: var(--navy); border-radius: 6px; transition: width .2s; }
     .progress-text { font-size: .8rem; color: var(--muted); text-align: center; }
 
-    /* Content list table */
+    /* Content list */
     .cl-scroll { overflow-x: auto; }
-    table.cl { width: 100%; min-width: 400px; border-collapse: collapse; background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,.06); }
-    table.cl thead th { background: var(--navy); color: #fff; padding: 12px 14px; text-align: left; font-size: .8rem; }
-    table.cl tbody td { padding: 10px 14px; border-bottom: 1px solid #f0f2f6; font-size: .85rem; vertical-align: middle; }
+    table.cl { width: 100%; min-width: 460px; border-collapse: collapse; background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,.06); }
+    table.cl thead th { background: var(--navy); color: #fff; padding: 11px 12px; text-align: left; font-size: .78rem; }
+    table.cl tbody td { padding: 9px 12px; border-bottom: 1px solid #f0f2f6; font-size: .83rem; vertical-align: middle; }
     table.cl tbody tr:last-child td { border-bottom: none; }
     .ops { display: flex; gap: 6px; }
 
@@ -129,12 +116,11 @@
     input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 20px; height: 20px; border-radius: 50%; background: var(--navy); cursor: pointer; }
     input[type=range]::-moz-range-thumb { width: 20px; height: 20px; border-radius: 50%; background: var(--navy); cursor: pointer; border: none; }
 
-    /* QR modal */
+    /* QR */
     .qr-sheet { max-width: 360px; margin: 0 auto; text-align: center; }
-    .qr-title-sm { font-size: .85rem; color: var(--muted); margin-bottom: 16px; }
+    .qr-sub { font-size: .85rem; color: var(--muted); margin-bottom: 16px; }
     #qrCanvas { display: inline-block; margin-bottom: 14px; }
     .qr-url { font-size: .72rem; color: var(--navy); word-break: break-all; margin-bottom: 14px; line-height: 1.5; }
-    .btn-copy { width: 100%; height: 44px; font-size: .875rem; }
 
     .msg-c { text-align: center; padding: 32px 20px; color: var(--muted); font-size: .9rem; }
   </style>
@@ -142,7 +128,7 @@
 <body>
 
 <header class="app-header">
-  <a href="../" aria-label="トップへ戻る">←</a>
+  <a href="../">←</a>
   <span class="app-title">設定</span>
 </header>
 
@@ -153,8 +139,13 @@
   <button class="tab-btn" data-tab="t4">コンテンツ一覧</button>
 </nav>
 
-<!-- ── Tab1: コンテンツ設定 ── -->
+<!-- Tab1: コンテンツ設定 -->
 <div class="tab-panel active" id="t1">
+  <div class="sec-gap">
+    <div class="sec-title">年度の設定</div>
+    <div class="crud-list" id="yearList"></div>
+    <button class="btn btn-add" id="addYearBtn">＋ 年度を追加</button>
+  </div>
   <div class="sec-gap">
     <div class="sec-title">学期の設定</div>
     <div class="crud-list" id="termList"></div>
@@ -168,7 +159,7 @@
   <button class="btn btn-navy btn-save" id="saveContentBtn">保存する</button>
 </div>
 
-<!-- ── Tab2: R2設定 ── -->
+<!-- Tab2: R2設定 -->
 <div class="tab-panel" id="t2">
   <div class="form-row">
     <label class="form-label">R2 ベースURL（公開URL）</label>
@@ -197,21 +188,22 @@
   </div>
 </div>
 
-<!-- ── Tab3: ファイルアップロード ── -->
+<!-- Tab3: ファイルアップロード -->
 <div class="tab-panel" id="t3">
   <div class="upload-select-row">
+    <select id="upYear"><option value="">年度を選択</option></select>
     <select id="upTerm"><option value="">学期を選択</option></select>
     <select id="upLevel"><option value="">レベルを選択</option></select>
   </div>
   <div class="file-drop" id="fileDrop">
     <div>タップまたはドラッグでMP3を選択</div>
-    <div style="font-size:.75rem;margin-top:4px;">複数選択可</div>
+    <div style="font-size:.75rem;margin-top:4px;">複数選択可・ファイル名の数字を講番号に自動反映</div>
     <input type="file" id="fileInput" accept=".mp3,audio/mpeg" multiple>
   </div>
   <div id="previewSection" style="display:none">
     <div class="preview-wrap">
       <table class="preview-table">
-        <thead><tr><th>#</th><th>元のファイル名</th><th>アップロード先</th></tr></thead>
+        <thead><tr><th>#</th><th>元のファイル名</th><th>講番号</th><th>アップロード先</th></tr></thead>
         <tbody id="previewBody"></tbody>
       </table>
     </div>
@@ -223,12 +215,12 @@
   </div>
 </div>
 
-<!-- ── Tab4: コンテンツ一覧 ── -->
+<!-- Tab4: コンテンツ一覧 -->
 <div class="tab-panel" id="t4">
   <div class="cl-scroll"><div id="contentListTable"><div class="msg-c">読み込み中…</div></div></div>
 </div>
 
-<!-- ── Player overlay ── -->
+<!-- Player overlay -->
 <div class="overlay" id="playerOverlay">
   <div class="sheet">
     <div class="pl-header">
@@ -242,7 +234,7 @@
     </div>
     <div class="time-row"><span id="curTime">0:00</span><span id="durTime">0:00</span></div>
     <div class="ctrl-row">
-      <button class="ctrl-btn" id="btnBack" aria-label="-10秒">
+      <button class="ctrl-btn" id="btnBack">
         <svg width="30" height="30" viewBox="0 0 24 24"><path d="M12 5V2L7 7l5 5V9c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z" fill="currentColor"/><text x="9" y="16.5" font-size="5.5" font-weight="bold" fill="currentColor" font-family="sans-serif" text-anchor="middle">10</text></svg>
       </button>
       <button class="ctrl-btn ctrl-btn-stop" id="btnStop">
@@ -277,17 +269,17 @@
   </div>
 </div>
 
-<!-- ── QR overlay ── -->
+<!-- QR overlay -->
 <div class="overlay" id="qrOverlay">
   <div class="sheet qr-sheet">
     <div class="pl-header" style="justify-content:flex-end;margin-bottom:12px;">
       <button class="btn-close" id="qrClose">✕</button>
     </div>
     <div class="pl-title" id="qrTitle" style="margin-bottom:8px;text-align:center;"></div>
-    <div class="qr-title-sm">スキャンで直接再生</div>
+    <div class="qr-sub">スキャンで直接再生</div>
     <div id="qrCanvas"></div>
     <div class="qr-url" id="qrUrlText"></div>
-    <button class="btn btn-navy btn-copy" id="btnCopyUrl">URLをコピー</button>
+    <button class="btn btn-navy" id="btnCopyUrl" style="width:100%;height:44px;font-size:.875rem;">URLをコピー</button>
   </div>
 </div>
 
@@ -296,13 +288,14 @@ const SK = 'dke_settings';
 const BASE_URL = 'https://ryoxsakai.github.io/textaudio';
 const DEFAULTS = {
   r2BaseUrl: BASE_URL,
-  terms:  [{ id:'t1', name:'前期', tag:'term1', lessons:3 }, { id:'t2', name:'夏期', tag:'term2', lessons:2 }],
-  levels: [{ id:'l1', name:'High 読解', tag:'high_reading' }, { id:'l2', name:'High 構文', tag:'high_structure' }, { id:'l3', name:'Standard 読解', tag:'standard_reading' }, { id:'l4', name:'Standard 構文', tag:'standard_structure' }]
+  years:  [{ id: 'y1', name: '2026年度', tag: '2026' }],
+  terms:  [{ id: 't1', name: '前期', tag: 'term1', lessons: 3 }, { id: 't2', name: '夏期', tag: 'term2', lessons: 2 }],
+  levels: [{ id: 'l1', name: 'High 読解', tag: 'high_reading' }, { id: 'l2', name: 'High 構文', tag: 'high_structure' }, { id: 'l3', name: 'Standard 読解', tag: 'standard_reading' }, { id: 'l4', name: 'Standard 構文', tag: 'standard_structure' }]
 };
 
 let cfg = {
   r2BaseUrl: '', r2AccountId: '', r2AccessKeyId: '', r2SecretKey: '', r2Bucket: 'textaudio',
-  terms: [], levels: []
+  years: [], terms: [], levels: []
 };
 
 /* ── Toast ── */
@@ -330,7 +323,6 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
 async function loadAllSettings() {
   let local = null;
   try { local = JSON.parse(localStorage.getItem(SK)); } catch {}
-
   cfg.r2AccountId  = local?.r2AccountId  || '';
   cfg.r2AccessKeyId = local?.r2AccessKeyId || '';
   cfg.r2SecretKey  = local?.r2SecretKey  || '';
@@ -342,120 +334,127 @@ async function loadAllSettings() {
       const r = await fetch(`${cfg.r2BaseUrl}/settings.json`);
       if (r.ok) {
         const j = await r.json();
-        cfg.terms    = j.terms    || DEFAULTS.terms;
-        cfg.levels   = j.levels   || DEFAULTS.levels;
+        cfg.years  = j.years  || [...DEFAULTS.years];
+        cfg.terms  = j.terms  || [...DEFAULTS.terms];
+        cfg.levels = j.levels || [...DEFAULTS.levels];
         if (j.r2BaseUrl) cfg.r2BaseUrl = j.r2BaseUrl;
         return;
       }
     } catch {}
   }
-
+  cfg.years  = (local?.years  && local.years.length)  ? local.years  : [...DEFAULTS.years];
   cfg.terms  = (local?.terms  && local.terms.length)  ? local.terms  : [...DEFAULTS.terms];
   cfg.levels = (local?.levels && local.levels.length) ? local.levels : [...DEFAULTS.levels];
 }
 
 function persistLocal() {
-  const payload = {
-    r2BaseUrl:     cfg.r2BaseUrl,
-    r2AccountId:   cfg.r2AccountId,
-    r2AccessKeyId: cfg.r2AccessKeyId,
-    r2SecretKey:   cfg.r2SecretKey,
-    r2Bucket:      cfg.r2Bucket,
-    terms:         cfg.terms,
-    levels:        cfg.levels
-  };
-  localStorage.setItem(SK, JSON.stringify(payload));
+  localStorage.setItem(SK, JSON.stringify({
+    r2BaseUrl: cfg.r2BaseUrl, r2AccountId: cfg.r2AccountId,
+    r2AccessKeyId: cfg.r2AccessKeyId, r2SecretKey: cfg.r2SecretKey, r2Bucket: cfg.r2Bucket,
+    years: cfg.years, terms: cfg.terms, levels: cfg.levels
+  }));
 }
 
-/* ── CRUD rendering: Terms ── */
+/* ── CRUD helper ── */
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function makeCrudItem(fields, actions) {
+  const div = document.createElement('div');
+  div.className = 'crud-item';
+  div.innerHTML = `<div class="crud-fields">${fields}</div><div class="crud-actions">${actions}</div>`;
+  return div;
+}
+
+/* ── Year CRUD ── */
+function renderYearList() {
+  const el = document.getElementById('yearList');
+  el.innerHTML = '';
+  cfg.years.forEach((y, i) => {
+    const div = makeCrudItem(
+      `<div class="crud-field wide"><label>表示名</label><input type="text" value="${esc(y.name)}" data-field="name" data-arr="years" data-idx="${i}"></div>
+       <div class="crud-field wide"><label>タグ（英字）</label><input type="text" value="${esc(y.tag)}" data-field="tag" data-arr="years" data-idx="${i}"></div>`,
+      `<button class="btn btn-ghost" style="height:32px;padding:0 10px;font-size:.75rem;" onclick="moveArr('years',${i},-1,renderYearList)" ${i===0?'disabled':''}>↑</button>
+       <button class="btn btn-ghost" style="height:32px;padding:0 10px;font-size:.75rem;" onclick="moveArr('years',${i},1,renderYearList)" ${i===cfg.years.length-1?'disabled':''}>↓</button>
+       <button class="btn btn-red"   style="height:32px;padding:0 10px;font-size:.75rem;" onclick="delArr('years',${i},renderYearList)">削除</button>`
+    );
+    div.querySelectorAll('input').forEach(attachCrudInput);
+    el.appendChild(div);
+  });
+}
+document.getElementById('addYearBtn').addEventListener('click', () => {
+  cfg.years.push({ id: 'y' + Date.now(), name: '', tag: '' });
+  renderYearList();
+});
+
+/* ── Term CRUD ── */
 function renderTermList() {
   const el = document.getElementById('termList');
   el.innerHTML = '';
   cfg.terms.forEach((t, i) => {
-    const div = document.createElement('div');
-    div.className = 'crud-item';
-    div.innerHTML = `
-      <div class="crud-fields">
-        <div class="crud-field wide"><label>表示名</label><input type="text" value="${esc(t.name)}" data-field="name" data-idx="${i}"></div>
-        <div class="crud-field wide"><label>タグ（英字）</label><input type="text" value="${esc(t.tag)}" data-field="tag" data-idx="${i}"></div>
-        <div class="crud-field narrow"><label>講数</label><input type="number" min="1" value="${t.lessons}" data-field="lessons" data-idx="${i}"></div>
-      </div>
-      <div class="crud-actions">
-        <button class="btn btn-ghost" style="height:32px;padding:0 10px;font-size:.75rem;" onclick="moveTerm(${i},-1)" ${i===0?'disabled':''}>↑</button>
-        <button class="btn btn-ghost" style="height:32px;padding:0 10px;font-size:.75rem;" onclick="moveTerm(${i},1)" ${i===cfg.terms.length-1?'disabled':''}>↓</button>
-        <button class="btn btn-red"  style="height:32px;padding:0 10px;font-size:.75rem;" onclick="delTerm(${i})">削除</button>
-      </div>`;
-    div.querySelectorAll('input').forEach(inp => {
-      inp.addEventListener('input', e => {
-        const idx = +e.target.dataset.idx, f = e.target.dataset.field;
-        cfg.terms[idx][f] = f === 'lessons' ? Math.max(1, parseInt(e.target.value)||1) : e.target.value;
-      });
-    });
+    const div = makeCrudItem(
+      `<div class="crud-field wide"><label>表示名</label><input type="text" value="${esc(t.name)}" data-field="name" data-arr="terms" data-idx="${i}"></div>
+       <div class="crud-field wide"><label>タグ（英字）</label><input type="text" value="${esc(t.tag)}" data-field="tag" data-arr="terms" data-idx="${i}"></div>
+       <div class="crud-field narrow"><label>講数</label><input type="number" min="1" value="${t.lessons}" data-field="lessons" data-arr="terms" data-idx="${i}"></div>`,
+      `<button class="btn btn-ghost" style="height:32px;padding:0 10px;font-size:.75rem;" onclick="moveArr('terms',${i},-1,renderTermList)" ${i===0?'disabled':''}>↑</button>
+       <button class="btn btn-ghost" style="height:32px;padding:0 10px;font-size:.75rem;" onclick="moveArr('terms',${i},1,renderTermList)" ${i===cfg.terms.length-1?'disabled':''}>↓</button>
+       <button class="btn btn-red"   style="height:32px;padding:0 10px;font-size:.75rem;" onclick="delArr('terms',${i},renderTermList)">削除</button>`
+    );
+    div.querySelectorAll('input').forEach(attachCrudInput);
     el.appendChild(div);
   });
 }
-
-function moveTerm(i, dir) {
-  const j = i + dir;
-  if (j < 0 || j >= cfg.terms.length) return;
-  [cfg.terms[i], cfg.terms[j]] = [cfg.terms[j], cfg.terms[i]];
-  renderTermList();
-}
-function delTerm(i) { cfg.terms.splice(i, 1); renderTermList(); }
 document.getElementById('addTermBtn').addEventListener('click', () => {
   cfg.terms.push({ id: 't' + Date.now(), name: '', tag: '', lessons: 1 });
   renderTermList();
 });
 
-/* ── CRUD rendering: Levels ── */
+/* ── Level CRUD ── */
 function renderLevelList() {
   const el = document.getElementById('levelList');
   el.innerHTML = '';
   cfg.levels.forEach((l, i) => {
-    const div = document.createElement('div');
-    div.className = 'crud-item';
-    div.innerHTML = `
-      <div class="crud-fields">
-        <div class="crud-field wide"><label>表示名</label><input type="text" value="${esc(l.name)}" data-field="name" data-idx="${i}"></div>
-        <div class="crud-field wide"><label>タグ（英字）</label><input type="text" value="${esc(l.tag)}" data-field="tag" data-idx="${i}"></div>
-      </div>
-      <div class="crud-actions">
-        <button class="btn btn-ghost" style="height:32px;padding:0 10px;font-size:.75rem;" onclick="moveLevel(${i},-1)" ${i===0?'disabled':''}>↑</button>
-        <button class="btn btn-ghost" style="height:32px;padding:0 10px;font-size:.75rem;" onclick="moveLevel(${i},1)" ${i===cfg.levels.length-1?'disabled':''}>↓</button>
-        <button class="btn btn-red"  style="height:32px;padding:0 10px;font-size:.75rem;" onclick="delLevel(${i})">削除</button>
-      </div>`;
-    div.querySelectorAll('input').forEach(inp => {
-      inp.addEventListener('input', e => {
-        const idx = +e.target.dataset.idx, f = e.target.dataset.field;
-        cfg.levels[idx][f] = e.target.value;
-      });
-    });
+    const div = makeCrudItem(
+      `<div class="crud-field wide"><label>表示名</label><input type="text" value="${esc(l.name)}" data-field="name" data-arr="levels" data-idx="${i}"></div>
+       <div class="crud-field wide"><label>タグ（英字）</label><input type="text" value="${esc(l.tag)}" data-field="tag" data-arr="levels" data-idx="${i}"></div>`,
+      `<button class="btn btn-ghost" style="height:32px;padding:0 10px;font-size:.75rem;" onclick="moveArr('levels',${i},-1,renderLevelList)" ${i===0?'disabled':''}>↑</button>
+       <button class="btn btn-ghost" style="height:32px;padding:0 10px;font-size:.75rem;" onclick="moveArr('levels',${i},1,renderLevelList)" ${i===cfg.levels.length-1?'disabled':''}>↓</button>
+       <button class="btn btn-red"   style="height:32px;padding:0 10px;font-size:.75rem;" onclick="delArr('levels',${i},renderLevelList)">削除</button>`
+    );
+    div.querySelectorAll('input').forEach(attachCrudInput);
     el.appendChild(div);
   });
 }
-
-function moveLevel(i, dir) {
-  const j = i + dir;
-  if (j < 0 || j >= cfg.levels.length) return;
-  [cfg.levels[i], cfg.levels[j]] = [cfg.levels[j], cfg.levels[i]];
-  renderLevelList();
-}
-function delLevel(i) { cfg.levels.splice(i, 1); renderLevelList(); }
 document.getElementById('addLevelBtn').addEventListener('click', () => {
   cfg.levels.push({ id: 'l' + Date.now(), name: '', tag: '' });
   renderLevelList();
 });
 
+/* ── CRUD shared helpers ── */
+function attachCrudInput(inp) {
+  inp.addEventListener('input', e => {
+    const idx = +e.target.dataset.idx, f = e.target.dataset.field, arr = e.target.dataset.arr;
+    cfg[arr][idx][f] = f === 'lessons' ? Math.max(1, parseInt(e.target.value)||1) : e.target.value;
+  });
+}
+function moveArr(arr, i, dir, render) {
+  const j = i + dir;
+  if (j < 0 || j >= cfg[arr].length) return;
+  [cfg[arr][i], cfg[arr][j]] = [cfg[arr][j], cfg[arr][i]];
+  render();
+}
+function delArr(arr, i, render) { cfg[arr].splice(i, 1); render(); }
+
 /* ── Save content settings ── */
 document.getElementById('saveContentBtn').addEventListener('click', async () => {
   const errs = [];
-  cfg.terms.forEach((t,i) => { if (!t.name.trim()) errs.push(`学期${i+1}の表示名が空です`); if (!t.tag.trim()) errs.push(`学期${i+1}のタグが空です`); });
+  cfg.years.forEach((y,i)  => { if (!y.name.trim()) errs.push(`年度${i+1}の表示名が空です`); if (!y.tag.trim()) errs.push(`年度${i+1}のタグが空です`); });
+  cfg.terms.forEach((t,i)  => { if (!t.name.trim()) errs.push(`学期${i+1}の表示名が空です`); if (!t.tag.trim()) errs.push(`学期${i+1}のタグが空です`); });
   cfg.levels.forEach((l,i) => { if (!l.name.trim()) errs.push(`レベル${i+1}の表示名が空です`); if (!l.tag.trim()) errs.push(`レベル${i+1}のタグが空です`); });
   if (errs.length) { toast(errs[0], 'err'); return; }
 
   persistLocal();
+  const json = JSON.stringify({ r2BaseUrl: cfg.r2BaseUrl, years: cfg.years, terms: cfg.terms, levels: cfg.levels }, null, 2);
 
-  const json = JSON.stringify({ r2BaseUrl: cfg.r2BaseUrl, terms: cfg.terms, levels: cfg.levels }, null, 2);
   if (cfg.r2AccountId && cfg.r2AccessKeyId && cfg.r2SecretKey && cfg.r2Bucket) {
     try {
       const url = `https://${cfg.r2AccountId}.r2.cloudflarestorage.com/${cfg.r2Bucket}/settings.json`;
@@ -472,13 +471,12 @@ document.getElementById('saveContentBtn').addEventListener('click', async () => 
 
 /* ── R2 settings ── */
 function loadR2Fields() {
-  document.getElementById('r2BaseUrl').value    = cfg.r2BaseUrl    || '';
-  document.getElementById('r2AccountId').value  = cfg.r2AccountId  || '';
+  document.getElementById('r2BaseUrl').value     = cfg.r2BaseUrl    || '';
+  document.getElementById('r2AccountId').value   = cfg.r2AccountId  || '';
   document.getElementById('r2AccessKeyId').value = cfg.r2AccessKeyId || '';
-  document.getElementById('r2SecretKey').value  = cfg.r2SecretKey  || '';
-  document.getElementById('r2Bucket').value     = cfg.r2Bucket     || 'textaudio';
+  document.getElementById('r2SecretKey').value   = cfg.r2SecretKey  || '';
+  document.getElementById('r2Bucket').value      = cfg.r2Bucket     || 'textaudio';
 }
-
 document.getElementById('saveR2Btn').addEventListener('click', () => {
   cfg.r2BaseUrl    = document.getElementById('r2BaseUrl').value.trim().replace(/\/$/, '');
   cfg.r2AccountId  = document.getElementById('r2AccountId').value.trim();
@@ -488,30 +486,35 @@ document.getElementById('saveR2Btn').addEventListener('click', () => {
   persistLocal();
   toast('R2設定を保存しました');
 });
-
 document.getElementById('testConnBtn').addEventListener('click', async () => {
   const url = document.getElementById('r2BaseUrl').value.trim().replace(/\/$/, '');
   if (!url) { toast('ベースURLを入力してください', 'err'); return; }
   try {
     const r = await fetch(`${url}/settings.json`);
     toast(r.ok ? '接続成功（settings.json取得OK）' : `接続できました（HTTP ${r.status}）`);
-  } catch {
-    toast('接続できませんでした', 'err');
-  }
+  } catch { toast('接続できませんでした', 'err'); }
 });
 
 /* ── File upload ── */
 function populateUploadSelects() {
-  const tSel = document.getElementById('upTerm'), lSel = document.getElementById('upLevel');
-  tSel.innerHTML = '<option value="">学期を選択</option>' + cfg.terms.map(t => `<option value="${t.id}">${t.name}</option>`).join('');
-  lSel.innerHTML = '<option value="">レベルを選択</option>' + cfg.levels.map(l => `<option value="${l.id}">${l.name}</option>`).join('');
+  const yS = document.getElementById('upYear');
+  const tS = document.getElementById('upTerm');
+  const lS = document.getElementById('upLevel');
+  yS.innerHTML = '<option value="">年度を選択</option>' + cfg.years.map(y => `<option value="${y.id}">${y.name}</option>`).join('');
+  tS.innerHTML = '<option value="">学期を選択</option>' + cfg.terms.map(t => `<option value="${t.id}">${t.name}</option>`).join('');
+  lS.innerHTML = '<option value="">レベルを選択</option>' + cfg.levels.map(l => `<option value="${l.id}">${l.name}</option>`).join('');
 }
 
 let selectedFiles = [];
+let lessonNums = [];
+
+function guessLessonNum(filename, fallback) {
+  const m = filename.match(/(\d+)/);
+  return m ? parseInt(m[1], 10) : fallback;
+}
 
 const fileDrop = document.getElementById('fileDrop');
 const fileInput = document.getElementById('fileInput');
-
 fileDrop.addEventListener('click', () => fileInput.click());
 fileDrop.addEventListener('dragover', e => { e.preventDefault(); fileDrop.classList.add('drag-over'); });
 fileDrop.addEventListener('dragleave', () => fileDrop.classList.remove('drag-over'));
@@ -520,69 +523,81 @@ fileInput.addEventListener('change', e => handleFiles(e.target.files));
 
 function handleFiles(fileList) {
   selectedFiles = Array.from(fileList).sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+  lessonNums = selectedFiles.map((f, i) => guessLessonNum(f.name, i + 1));
   renderPreview();
 }
 
-function renderPreview() {
-  const tId = document.getElementById('upTerm').value;
-  const lId = document.getElementById('upLevel').value;
-  const t = cfg.terms.find(x => x.id === tId);
-  const l = cfg.levels.find(x => x.id === lId);
+function getUploadPath(idx) {
+  const y = cfg.years.find(x => x.id === document.getElementById('upYear').value);
+  const t = cfg.terms.find(x => x.id === document.getElementById('upTerm').value);
+  const l = cfg.levels.find(x => x.id === document.getElementById('upLevel').value);
+  if (!y || !t || !l) return null;
+  return `${y.tag}/${t.tag}/${l.tag}/lesson${lessonNums[idx]}.mp3`;
+}
 
+function renderPreview() {
   const sec = document.getElementById('previewSection');
   if (!selectedFiles.length) { sec.style.display = 'none'; return; }
   sec.style.display = 'block';
-
   const body = document.getElementById('previewBody');
   body.innerHTML = selectedFiles.map((f, i) => {
-    const path = (t && l) ? `${t.tag}/${l.tag}/lesson${i+1}.mp3` : `（学期・レベル未選択）`;
-    return `<tr><td>${i+1}</td><td>${esc(f.name)}</td><td class="preview-path">${path}</td></tr>`;
+    const path = getUploadPath(i) || '（年度・学期・レベルを選択してください）';
+    return `<tr>
+      <td>${i+1}</td>
+      <td>${esc(f.name)}</td>
+      <td><input type="number" min="1" class="lesson-num-input" value="${lessonNums[i]}" data-idx="${i}"></td>
+      <td class="preview-path" id="pp${i}">${path}</td>
+    </tr>`;
   }).join('');
+  body.querySelectorAll('.lesson-num-input').forEach(inp => {
+    inp.addEventListener('input', e => {
+      const idx = +e.target.dataset.idx;
+      lessonNums[idx] = Math.max(1, parseInt(e.target.value) || 1);
+      const el = document.getElementById(`pp${idx}`);
+      if (el) el.textContent = getUploadPath(idx) || '（未選択）';
+    });
+  });
 }
 
-['upTerm','upLevel'].forEach(id => document.getElementById(id).addEventListener('change', renderPreview));
+['upYear','upTerm','upLevel'].forEach(id => document.getElementById(id).addEventListener('change', () => {
+  renderPreview();
+}));
 
 document.getElementById('uploadBtn').addEventListener('click', async () => {
-  const tId = document.getElementById('upTerm').value;
-  const lId = document.getElementById('upLevel').value;
-  const t = cfg.terms.find(x => x.id === tId);
-  const l = cfg.levels.find(x => x.id === lId);
-
-  if (!t || !l) { toast('学期とレベルを選択してください', 'err'); return; }
+  const y = cfg.years.find(x => x.id === document.getElementById('upYear').value);
+  const t = cfg.terms.find(x => x.id === document.getElementById('upTerm').value);
+  const l = cfg.levels.find(x => x.id === document.getElementById('upLevel').value);
+  if (!y || !t || !l) { toast('年度・学期・レベルを選択してください', 'err'); return; }
   if (!selectedFiles.length) { toast('ファイルを選択してください', 'err'); return; }
   if (!cfg.r2AccountId || !cfg.r2AccessKeyId || !cfg.r2SecretKey) { toast('R2設定が未完了です', 'err'); return; }
 
-  const progWrap = document.getElementById('uploadProgress');
-  const progBar  = document.getElementById('progressBar');
-  const progText = document.getElementById('progressText');
-  progWrap.style.display = 'block';
+  const prog = document.getElementById('uploadProgress');
+  const bar  = document.getElementById('progressBar');
+  const txt  = document.getElementById('progressText');
+  prog.style.display = 'block';
   document.getElementById('uploadBtn').disabled = true;
-
   let ok = 0, fail = 0;
+
   for (let i = 0; i < selectedFiles.length; i++) {
     const file = selectedFiles[i];
-    const key  = `${t.tag}/${l.tag}/lesson${i+1}.mp3`;
+    const key  = `${y.tag}/${t.tag}/${l.tag}/lesson${lessonNums[i]}.mp3`;
     const url  = `https://${cfg.r2AccountId}.r2.cloudflarestorage.com/${cfg.r2Bucket}/${key}`;
-    progText.textContent = `${i+1} / ${selectedFiles.length} — ${esc(file.name)}`;
+    txt.textContent = `${i+1} / ${selectedFiles.length} — ${esc(file.name)}`;
     try {
       const res = await signedPut(url, file, 'audio/mpeg');
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       ok++;
-    } catch (e) {
-      fail++;
-      toast(`${file.name}: ${e.message}`, 'err');
-    }
-    progBar.style.width = ((i + 1) / selectedFiles.length * 100) + '%';
+    } catch (e) { fail++; toast(`${file.name}: ${e.message}`, 'err'); }
+    bar.style.width = ((i+1) / selectedFiles.length * 100) + '%';
   }
-
-  progText.textContent = `完了: ${ok} 件${fail ? ' / 失敗: ' + fail + ' 件' : ''}`;
+  txt.textContent = `完了: ${ok} 件${fail ? ' / 失敗: '+fail+' 件' : ''}`;
   document.getElementById('uploadBtn').disabled = false;
   if (!fail) toast(`${ok} 件アップロード完了`);
 });
 
 /* ── AWS Signature V4 ── */
 async function sha256hex(data) {
-  const buf = (typeof data === 'string') ? new TextEncoder().encode(data) : data;
+  const buf = typeof data === 'string' ? new TextEncoder().encode(data) : data;
   const h = await crypto.subtle.digest('SHA-256', buf);
   return Array.from(new Uint8Array(h)).map(b => b.toString(16).padStart(2,'0')).join('');
 }
@@ -596,39 +611,32 @@ async function hmacBytes(keyMat, msg) {
 async function hmacHex(keyMat, msg) {
   return Array.from(await hmacBytes(keyMat, msg)).map(b => b.toString(16).padStart(2,'0')).join('');
 }
-
 async function signedPut(url, body, contentType) {
   const now = new Date();
   const pad = n => String(n).padStart(2,'0');
   const ds  = `${now.getUTCFullYear()}${pad(now.getUTCMonth()+1)}${pad(now.getUTCDate())}`;
   const amz = `${ds}T${pad(now.getUTCHours())}${pad(now.getUTCMinutes())}${pad(now.getUTCSeconds())}Z`;
   const region = 'auto', service = 's3';
-
   const u = new URL(url);
   let bodyBytes;
   if (body instanceof File || body instanceof Blob) bodyBytes = new Uint8Array(await body.arrayBuffer());
   else bodyBytes = new TextEncoder().encode(body);
-
   const payHash = await sha256hex(bodyBytes);
   const canonHeaders = `content-type:${contentType}\nhost:${u.hostname}\nx-amz-content-sha256:${payHash}\nx-amz-date:${amz}\n`;
   const signedHdrs   = 'content-type;host;x-amz-content-sha256;x-amz-date';
   const canonReq     = `PUT\n${u.pathname}\n\n${canonHeaders}\n${signedHdrs}\n${payHash}`;
   const credScope    = `${ds}/${region}/${service}/aws4_request`;
   const sts          = `AWS4-HMAC-SHA256\n${amz}\n${credScope}\n${await sha256hex(canonReq)}`;
-
-  const kDate    = await hmacBytes('AWS4' + cfg.r2SecretKey, ds);
-  const kRegion  = await hmacBytes(kDate,   region);
-  const kService = await hmacBytes(kRegion, service);
-  const kSign    = await hmacBytes(kService, 'aws4_request');
-  const sig      = await hmacHex(kSign, sts);
-
+  const kDate = await hmacBytes('AWS4' + cfg.r2SecretKey, ds);
+  const kReg  = await hmacBytes(kDate, region);
+  const kSvc  = await hmacBytes(kReg, service);
+  const kSign = await hmacBytes(kSvc, 'aws4_request');
+  const sig   = await hmacHex(kSign, sts);
   return fetch(url, {
     method: 'PUT',
     headers: {
       'Authorization': `AWS4-HMAC-SHA256 Credential=${cfg.r2AccessKeyId}/${credScope}, SignedHeaders=${signedHdrs}, Signature=${sig}`,
-      'x-amz-date': amz,
-      'x-amz-content-sha256': payHash,
-      'Content-Type': contentType
+      'x-amz-date': amz, 'x-amz-content-sha256': payHash, 'Content-Type': contentType
     },
     body: bodyBytes
   });
@@ -637,29 +645,32 @@ async function signedPut(url, body, contentType) {
 /* ── Content list ── */
 function allRows() {
   const rows = [];
-  for (const t of cfg.terms) for (const l of cfg.levels) for (let n = 1; n <= t.lessons; n++)
-    rows.push({ t, l, n });
+  for (const y of cfg.years)
+    for (const t of cfg.terms)
+      for (const l of cfg.levels)
+        for (let n = 1; n <= t.lessons; n++)
+          rows.push({ y, t, l, n });
   return rows;
 }
-function audioUrl(t, l, n) { return `${cfg.r2BaseUrl}/${t.tag}/${l.tag}/lesson${n}.mp3`; }
-function qrUrl(t, l, n)    { return `${BASE_URL}/?term=${t.id}&level=${l.id}&lesson=${n}`; }
+function audioUrl(y, t, l, n) { return `${cfg.r2BaseUrl}/${y.tag}/${t.tag}/${l.tag}/lesson${n}.mp3`; }
+function qrUrl(y, t, l, n)    { return `${BASE_URL}/?year=${y.id}&term=${t.id}&level=${l.id}&lesson=${n}`; }
 
 function renderContentList() {
   const rows = allRows();
   const con = document.getElementById('contentListTable');
   if (!rows.length) { con.innerHTML = '<div class="msg-c">コンテンツがありません</div>'; return; }
-  let h = '<table class="cl"><thead><tr><th>学期</th><th>レベル</th><th>講</th><th>操作</th></tr></thead><tbody>';
+  let h = '<table class="cl"><thead><tr><th>年度</th><th>学期</th><th>レベル</th><th>講</th><th>操作</th></tr></thead><tbody>';
   for (const r of rows) {
-    h += `<tr><td>${r.t.name}</td><td>${r.l.name}</td><td>第${r.n}講</td><td class="ops">
-      <button class="btn btn-navy" style="font-size:.75rem;height:34px;" onclick="openPlayer('${r.t.id}','${r.l.id}',${r.n})">▶ 再生</button>
-      <button class="btn btn-ghost" style="font-size:.75rem;height:34px;" onclick="openQr('${r.t.id}','${r.l.id}',${r.n})">QR</button>
+    h += `<tr><td>${r.y.name}</td><td>${r.t.name}</td><td>${r.l.name}</td><td>第${r.n}講</td><td class="ops">
+      <button class="btn btn-navy" style="font-size:.75rem;height:32px;" onclick="openPlayer('${r.y.id}','${r.t.id}','${r.l.id}',${r.n})">▶ 再生</button>
+      <button class="btn btn-ghost" style="font-size:.75rem;height:32px;" onclick="openQr('${r.y.id}','${r.t.id}','${r.l.id}',${r.n})">QR</button>
     </td></tr>`;
   }
   con.innerHTML = h + '</tbody></table>';
 }
 
 /* ── Player ── */
-const audio   = document.getElementById('audio');
+const audio    = document.getElementById('audio');
 const pOverlay = document.getElementById('playerOverlay');
 
 function fmt(s) { return isFinite(s) ? Math.floor(s/60) + ':' + String(Math.floor(s%60)).padStart(2,'0') : '0:00'; }
@@ -712,13 +723,14 @@ const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
 if (isIOS) { document.getElementById('volRow').style.display = 'none'; document.getElementById('volNote').style.display = 'block'; }
 else { document.getElementById('volSlider').addEventListener('input', e => { audio.volume = parseFloat(e.target.value); }); }
 
-function openPlayer(tId, lId, n) {
-  const t = cfg.terms.find(x => x.id === tId), l = cfg.levels.find(x => x.id === lId);
-  if (!t || !l) return;
-  document.getElementById('playerTitle').textContent = `${t.name} / ${l.name} / 第${n}講`;
-  audio.src = audioUrl(t, l, n);
-  audio.currentTime = 0;
-  setPI(false);
+function openPlayer(yId, tId, lId, n) {
+  const y = cfg.years.find(x => x.id === yId);
+  const t = cfg.terms.find(x => x.id === tId);
+  const l = cfg.levels.find(x => x.id === lId);
+  if (!y || !t || !l) return;
+  document.getElementById('playerTitle').textContent = `${y.name} / ${t.name} / ${l.name} / 第${n}講`;
+  audio.src = audioUrl(y, t, l, n);
+  audio.currentTime = 0; setPI(false);
   document.getElementById('durTime').textContent = '0:00';
   document.getElementById('curTime').textContent = '0:00';
   setSpeed(1);
@@ -730,34 +742,32 @@ pOverlay.addEventListener('click', e => { if (e.target === pOverlay) closePlayer
 
 /* ── QR ── */
 const qrOverlay = document.getElementById('qrOverlay');
-let qrInstance = null;
 
-function openQr(tId, lId, n) {
-  const t = cfg.terms.find(x => x.id === tId), l = cfg.levels.find(x => x.id === lId);
-  if (!t || !l) return;
-  const url = qrUrl(t, l, n);
-  document.getElementById('qrTitle').textContent = `${t.name} / ${l.name} / 第${n}講`;
+function openQr(yId, tId, lId, n) {
+  const y = cfg.years.find(x => x.id === yId);
+  const t = cfg.terms.find(x => x.id === tId);
+  const l = cfg.levels.find(x => x.id === lId);
+  if (!y || !t || !l) return;
+  const url = qrUrl(y, t, l, n);
+  document.getElementById('qrTitle').textContent = `${y.name} / ${t.name} / ${l.name} / 第${n}講`;
   document.getElementById('qrUrlText').textContent = url;
-
   const canvas = document.getElementById('qrCanvas');
   canvas.innerHTML = '';
-  qrInstance = new QRCode(canvas, { text: url, width: 200, height: 200, correctLevel: QRCode.CorrectLevel.M });
-
+  new QRCode(canvas, { text: url, width: 200, height: 200, correctLevel: QRCode.CorrectLevel.M });
   document.getElementById('btnCopyUrl').onclick = () => {
-    navigator.clipboard.writeText(url).then(() => toast('URLをコピーしました')).catch(() => toast('コピーできませんでした', 'err'));
+    navigator.clipboard.writeText(url)
+      .then(() => toast('URLをコピーしました'))
+      .catch(() => toast('コピーできませんでした', 'err'));
   };
-
   qrOverlay.classList.add('open');
 }
 document.getElementById('qrClose').addEventListener('click', () => qrOverlay.classList.remove('open'));
 qrOverlay.addEventListener('click', e => { if (e.target === qrOverlay) qrOverlay.classList.remove('open'); });
 
-/* ── Util ── */
-function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-
 /* ── Init ── */
 async function init() {
   await loadAllSettings();
+  renderYearList();
   renderTermList();
   renderLevelList();
   loadR2Fields();

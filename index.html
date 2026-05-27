@@ -7,70 +7,53 @@
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
-      --navy: #1a4a6b;
-      --navy-dk: #123452;
-      --navy-lt: #e8f0f7;
-      --green: #388e3c;
-      --green-lt: #e8f5e9;
-      --red: #d32f2f;
-      --border: #dde2e8;
-      --bg: #f4f6fa;
-      --text: #1a1a2e;
-      --muted: #6b7280;
+      --navy: #1a4a6b; --navy-dk: #123452; --navy-lt: #e8f0f7;
+      --green: #388e3c; --green-lt: #e8f5e9; --red: #d32f2f;
+      --border: #dde2e8; --bg: #f4f6fa; --text: #1a1a2e; --muted: #6b7280;
     }
     body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
 
-    /* Header */
     .app-header { background: var(--navy); color: #fff; padding: 0 16px; height: 56px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 10; box-shadow: 0 2px 8px rgba(0,0,0,.15); }
     .app-title { font-size: 1rem; font-weight: 700; }
     .badge { font-size: .78rem; background: rgba(255,255,255,.18); padding: 4px 12px; border-radius: 20px; white-space: nowrap; }
 
-    /* Filters */
-    .filter-bar { background: #fff; padding: 10px 16px; display: flex; gap: 10px; border-bottom: 1px solid var(--border); }
-    .filter-bar select { flex: 1; height: 40px; padding: 0 10px; border: 1px solid var(--border); border-radius: 8px; font-size: .875rem; background: #fff; color: var(--text); }
+    .filter-bar { background: #fff; padding: 10px 16px; display: flex; flex-wrap: wrap; gap: 8px; border-bottom: 1px solid var(--border); }
+    .filter-bar select { flex: 1 1 calc(33% - 8px); min-width: 100px; height: 38px; padding: 0 8px; border: 1px solid var(--border); border-radius: 8px; font-size: .8rem; background: #fff; color: var(--text); }
 
-    /* Table */
     .table-scroll { overflow-x: auto; padding: 16px; }
-    table { width: 100%; min-width: 360px; border-collapse: collapse; background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,.06); }
-    thead th { background: var(--navy); color: #fff; padding: 12px 14px; text-align: left; font-size: .8rem; font-weight: 600; }
-    tbody td { padding: 11px 14px; border-bottom: 1px solid #f0f2f6; font-size: .875rem; vertical-align: middle; }
+    table { width: 100%; min-width: 440px; border-collapse: collapse; background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,.06); }
+    thead th { background: var(--navy); color: #fff; padding: 11px 12px; text-align: left; font-size: .78rem; font-weight: 600; }
+    tbody td { padding: 10px 12px; border-bottom: 1px solid #f0f2f6; font-size: .84rem; vertical-align: middle; }
     tbody tr:last-child td { border-bottom: none; }
     tbody tr.done-row { background: var(--green-lt); }
     .ops { display: flex; gap: 6px; }
 
-    /* Buttons */
-    .btn { display: inline-flex; align-items: center; justify-content: center; border: none; border-radius: 8px; cursor: pointer; font-size: .8rem; font-weight: 600; padding: 0 12px; height: 36px; min-width: 44px; white-space: nowrap; -webkit-tap-highlight-color: transparent; transition: opacity .15s; }
+    .btn { display: inline-flex; align-items: center; justify-content: center; border: none; border-radius: 8px; cursor: pointer; font-size: .78rem; font-weight: 600; padding: 0 10px; height: 34px; min-width: 44px; white-space: nowrap; -webkit-tap-highlight-color: transparent; transition: opacity .15s; }
     .btn:active { opacity: .7; }
     .btn-play  { background: var(--navy); color: #fff; }
     .btn-done  { background: #f0f2f6; color: var(--muted); }
     .btn-done.is-done { background: var(--green); color: #fff; }
 
-    /* Message */
     .msg-c { text-align: center; padding: 48px 20px; color: var(--muted); font-size: .9rem; }
     .msg-c.err { color: var(--red); }
 
-    /* Footer */
     footer { text-align: center; padding: 20px; font-size: .78rem; color: var(--muted); }
     footer a { color: var(--navy); text-decoration: none; }
 
-    /* Overlay */
     .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 200; align-items: flex-end; }
     .overlay.open { display: flex; }
     .sheet { width: 100%; max-height: 92dvh; background: #fff; border-radius: 20px 20px 0 0; padding: 20px 20px 32px; overflow-y: auto; }
 
-    /* Player */
     .pl-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; }
     .pl-title { font-size: .95rem; font-weight: 700; color: var(--navy); line-height: 1.4; flex: 1; padding-right: 12px; }
     .btn-close { width: 32px; height: 32px; border: none; background: #f0f2f6; border-radius: 50%; font-size: 1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 
-    /* Progress */
     .prog-wrap { position: relative; height: 44px; display: flex; align-items: center; cursor: pointer; touch-action: none; user-select: none; }
     .prog-track { position: absolute; left: 0; right: 0; height: 6px; background: #e2e6ea; border-radius: 3px; overflow: hidden; }
     .prog-fill { height: 100%; width: 0; background: var(--navy); border-radius: 3px; }
     .prog-thumb { position: absolute; width: 18px; height: 18px; background: var(--navy); border-radius: 50%; top: 50%; left: 0; transform: translate(-50%,-50%); box-shadow: 0 1px 4px rgba(26,74,107,.4); }
     .time-row { display: flex; justify-content: space-between; font-size: .75rem; color: var(--muted); margin-bottom: 16px; }
 
-    /* Controls */
     .ctrl-row { display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 16px; }
     .ctrl-btn { display: flex; align-items: center; justify-content: center; border: none; background: none; border-radius: 50%; min-width: 44px; min-height: 44px; cursor: pointer; color: var(--navy); -webkit-tap-highlight-color: transparent; }
     .ctrl-btn:active { background: var(--navy-lt); }
@@ -78,7 +61,6 @@
     .ctrl-btn-main:active { background: var(--navy-dk); }
     .ctrl-btn-stop { color: #e53935; }
 
-    /* Speed */
     .speed-wrap { margin-bottom: 14px; }
     .speed-slider-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
     .lbl-sm { font-size: .75rem; color: var(--muted); flex-shrink: 0; }
@@ -87,7 +69,6 @@
     .btn-preset { border: 1.5px solid var(--border); background: #fff; color: #555; font-size: .78rem; font-weight: 600; padding: 5px 10px; border-radius: 20px; cursor: pointer; min-height: 36px; -webkit-tap-highlight-color: transparent; }
     .btn-preset.active { border-color: var(--navy); background: var(--navy); color: #fff; }
 
-    /* Volume */
     .vol-row { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
     .vol-icon { color: var(--muted); flex-shrink: 0; }
     .vol-note { font-size: .75rem; color: #aaa; text-align: center; margin-bottom: 8px; }
@@ -95,7 +76,6 @@
     input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 20px; height: 20px; border-radius: 50%; background: var(--navy); cursor: pointer; }
     input[type=range]::-moz-range-thumb { width: 20px; height: 20px; border-radius: 50%; background: var(--navy); cursor: pointer; border: none; }
 
-    /* Mark done */
     .btn-mark-done { width: 100%; height: 48px; border: none; border-radius: 12px; font-size: .95rem; font-weight: 700; cursor: pointer; background: var(--green); color: #fff; -webkit-tap-highlight-color: transparent; transition: opacity .15s; }
     .btn-mark-done:active { opacity: .8; }
     .btn-mark-done.is-done { background: #e0e0e0; color: var(--muted); }
@@ -109,6 +89,7 @@
 </header>
 
 <div class="filter-bar">
+  <select id="filterYear"><option value="">年度: 全て</option></select>
   <select id="filterTerm"><option value="">学期: 全て</option></select>
   <select id="filterLevel"><option value="">レベル: 全て</option></select>
 </div>
@@ -126,31 +107,27 @@
       <div class="pl-title" id="playerTitle">-</div>
       <button class="btn-close" id="btnClose">✕</button>
     </div>
-
     <audio id="audio" preload="metadata"></audio>
-
     <div class="prog-wrap" id="progWrap">
       <div class="prog-track"><div class="prog-fill" id="progFill"></div></div>
       <div class="prog-thumb" id="progThumb"></div>
     </div>
     <div class="time-row"><span id="curTime">0:00</span><span id="durTime">0:00</span></div>
-
     <div class="ctrl-row">
-      <button class="ctrl-btn" id="btnBack" aria-label="-10秒">
+      <button class="ctrl-btn" id="btnBack">
         <svg width="30" height="30" viewBox="0 0 24 24"><path d="M12 5V2L7 7l5 5V9c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z" fill="currentColor"/><text x="9" y="16.5" font-size="5.5" font-weight="bold" fill="currentColor" font-family="sans-serif" text-anchor="middle">10</text></svg>
       </button>
-      <button class="ctrl-btn ctrl-btn-stop" id="btnStop" aria-label="停止">
+      <button class="ctrl-btn ctrl-btn-stop" id="btnStop">
         <svg width="28" height="28" viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="14" rx="2" fill="currentColor"/></svg>
       </button>
-      <button class="ctrl-btn ctrl-btn-main" id="btnPlay" aria-label="再生">
+      <button class="ctrl-btn ctrl-btn-main" id="btnPlay">
         <svg id="iconPlay" width="28" height="28" viewBox="0 0 24 24"><polygon points="7,4 21,12 7,20" fill="currentColor"/></svg>
         <svg id="iconPause" width="28" height="28" viewBox="0 0 24 24" style="display:none"><rect x="5" y="4" width="4" height="16" rx="1" fill="currentColor"/><rect x="15" y="4" width="4" height="16" rx="1" fill="currentColor"/></svg>
       </button>
-      <button class="ctrl-btn" id="btnFwd" aria-label="+10秒">
+      <button class="ctrl-btn" id="btnFwd">
         <svg width="30" height="30" viewBox="0 0 24 24"><path d="M12 5V2l5 5-5 5V9c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6h2c0 4.42-3.58 8-8 8s-8-3.58-8-8 3.58-8 8-8z" fill="currentColor"/><text x="15" y="16.5" font-size="5.5" font-weight="bold" fill="currentColor" font-family="sans-serif" text-anchor="middle">10</text></svg>
       </button>
     </div>
-
     <div class="speed-wrap">
       <div class="speed-slider-row">
         <span class="lbl-sm">速度</span>
@@ -164,13 +141,11 @@
         <button class="btn-preset" data-speed="1.5">1.5x</button>
       </div>
     </div>
-
     <p class="vol-note" id="volNote" style="display:none">音量は端末のボタンで調整してください</p>
     <div class="vol-row" id="volRow">
       <span class="vol-icon"><svg width="20" height="20" viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z" fill="currentColor"/></svg></span>
       <input type="range" id="volSlider" min="0" max="1" step="0.01" value="1">
     </div>
-
     <button class="btn-mark-done" id="btnMarkDone">✓ 完了にする</button>
   </div>
 </div>
@@ -180,15 +155,16 @@ const SK = 'dke_settings';
 const DK = 'dke_completed';
 const DEFAULTS = {
   r2BaseUrl: 'https://ryoxsakai.github.io/textaudio',
-  terms:  [{ id:'t1', name:'前期', tag:'term1', lessons:3 }, { id:'t2', name:'夏期', tag:'term2', lessons:2 }],
-  levels: [{ id:'l1', name:'High 読解', tag:'high_reading' }, { id:'l2', name:'High 構文', tag:'high_structure' }, { id:'l3', name:'Standard 読解', tag:'standard_reading' }, { id:'l4', name:'Standard 構文', tag:'standard_structure' }]
+  years:  [{ id: 'y1', name: '2026年度', tag: '2026' }],
+  terms:  [{ id: 't1', name: '前期', tag: 'term1', lessons: 3 }, { id: 't2', name: '夏期', tag: 'term2', lessons: 2 }],
+  levels: [{ id: 'l1', name: 'High 読解', tag: 'high_reading' }, { id: 'l2', name: 'High 構文', tag: 'high_structure' }, { id: 'l3', name: 'Standard 読解', tag: 'standard_reading' }, { id: 'l4', name: 'Standard 構文', tag: 'standard_structure' }]
 };
 
 let cfg = null, done = {}, cur = null;
 
 function loadDone() { try { done = JSON.parse(localStorage.getItem(DK) || '{}'); } catch { done = {}; } }
 function saveDone() { localStorage.setItem(DK, JSON.stringify(done)); }
-function mk(t, l, n) { return `${t}_${l}_${n}`; }
+function mk(yId, tId, lId, n) { return `${yId}_${tId}_${lId}_${n}`; }
 
 async function loadCfg() {
   let local = null;
@@ -199,21 +175,29 @@ async function loadCfg() {
     if (r.ok) {
       const j = await r.json();
       cfg = j;
+      if (!cfg.years) cfg.years = [...DEFAULTS.years];
       localStorage.setItem(SK, JSON.stringify(Object.assign({}, local || {}, j)));
       return;
     }
   } catch {}
-  if (local && local.terms && local.levels) { cfg = local; return; }
+  if (local && local.terms && local.levels) {
+    cfg = local;
+    if (!cfg.years) cfg.years = [...DEFAULTS.years];
+    return;
+  }
   cfg = Object.assign({}, DEFAULTS);
 }
 
 function allRows() {
   const rows = [];
-  for (const t of cfg.terms) for (const l of cfg.levels) for (let n = 1; n <= t.lessons; n++)
-    rows.push({ t, l, n, key: mk(t.id, l.id, n) });
+  for (const y of cfg.years)
+    for (const t of cfg.terms)
+      for (const l of cfg.levels)
+        for (let n = 1; n <= t.lessons; n++)
+          rows.push({ y, t, l, n, key: mk(y.id, t.id, l.id, n) });
   return rows;
 }
-function audioUrl(t, l, n) { return `${cfg.r2BaseUrl}/${t.tag}/${l.tag}/lesson${n}.mp3`; }
+function audioUrl(y, t, l, n) { return `${cfg.r2BaseUrl}/${y.tag}/${t.tag}/${l.tag}/lesson${n}.mp3`; }
 
 function updateBadge() {
   const rows = allRows();
@@ -221,36 +205,43 @@ function updateBadge() {
 }
 
 function render() {
+  const yF = document.getElementById('filterYear').value;
   const tF = document.getElementById('filterTerm').value;
   const lF = document.getElementById('filterLevel').value;
-  const rows = allRows().filter(r => (!tF || r.t.id === tF) && (!lF || r.l.id === lF));
+  const rows = allRows().filter(r => (!yF || r.y.id === yF) && (!tF || r.t.id === tF) && (!lF || r.l.id === lF));
   updateBadge();
   const con = document.getElementById('tableContainer');
   if (!rows.length) { con.innerHTML = '<div class="msg-c">該当するコンテンツがありません</div>'; return; }
-  let h = '<table><thead><tr><th>学期</th><th>レベル</th><th>講</th><th>操作</th></tr></thead><tbody>';
+  let h = '<table><thead><tr><th>年度</th><th>学期</th><th>レベル</th><th>講</th><th>操作</th></tr></thead><tbody>';
   for (const r of rows) {
     const d = !!done[r.key];
-    h += `<tr class="${d ? 'done-row' : ''}"><td>${r.t.name}</td><td>${r.l.name}</td><td>第${r.n}講</td><td class="ops">
-      <button class="btn btn-play" onclick="openPlayer('${r.t.id}','${r.l.id}',${r.n})">▶ 再生</button>
-      <button class="btn btn-done ${d ? 'is-done' : ''}" onclick="toggleDone('${r.t.id}','${r.l.id}',${r.n})">${d ? '✓ 完了' : '完了'}</button>
-    </td></tr>`;
+    h += `<tr class="${d ? 'done-row' : ''}">
+      <td>${r.y.name}</td><td>${r.t.name}</td><td>${r.l.name}</td><td>第${r.n}講</td>
+      <td class="ops">
+        <button class="btn btn-play" onclick="openPlayer('${r.y.id}','${r.t.id}','${r.l.id}',${r.n})">▶ 再生</button>
+        <button class="btn btn-done ${d ? 'is-done' : ''}" onclick="toggleDone('${r.y.id}','${r.t.id}','${r.l.id}',${r.n})">${d ? '✓ 完了' : '完了'}</button>
+      </td>
+    </tr>`;
   }
   con.innerHTML = h + '</tbody></table>';
 }
 
 function populateFilters() {
-  const tSel = document.getElementById('filterTerm'), lSel = document.getElementById('filterLevel');
-  const tv = tSel.value, lv = lSel.value;
+  const ySel = document.getElementById('filterYear');
+  const tSel = document.getElementById('filterTerm');
+  const lSel = document.getElementById('filterLevel');
+  const yv = ySel.value, tv = tSel.value, lv = lSel.value;
+  ySel.innerHTML = '<option value="">年度: 全て</option>' + cfg.years.map(y => `<option value="${y.id}">${y.name}</option>`).join('');
   tSel.innerHTML = '<option value="">学期: 全て</option>' + cfg.terms.map(t => `<option value="${t.id}">${t.name}</option>`).join('');
   lSel.innerHTML = '<option value="">レベル: 全て</option>' + cfg.levels.map(l => `<option value="${l.id}">${l.name}</option>`).join('');
-  tSel.value = tv; lSel.value = lv;
+  ySel.value = yv; tSel.value = tv; lSel.value = lv;
 }
 
-function toggleDone(tId, lId, n) {
-  const k = mk(tId, lId, n);
+function toggleDone(yId, tId, lId, n) {
+  const k = mk(yId, tId, lId, n);
   if (done[k]) delete done[k]; else done[k] = true;
   saveDone(); render();
-  if (cur && cur.tId === tId && cur.lId === lId && cur.n === n) refreshMarkBtn();
+  if (cur && cur.yId === yId && cur.tId === tId && cur.lId === lId && cur.n === n) refreshMarkBtn();
 }
 
 /* ── Player ── */
@@ -272,7 +263,6 @@ function setPI(playing) {
   document.getElementById('iconPlay').style.display  = playing ? 'none' : '';
   document.getElementById('iconPause').style.display = playing ? '' : 'none';
 }
-
 document.getElementById('btnPlay').addEventListener('click', () => {
   if (audio.paused) { audio.play(); setPI(true); } else { audio.pause(); setPI(false); }
 });
@@ -298,7 +288,7 @@ window.addEventListener('touchend',  () => { seeking = false; });
 function setSpeed(v) {
   audio.playbackRate = v;
   document.getElementById('speedSlider').value = v;
-  document.getElementById('speedVal').textContent = (Math.round(v * 100) / 100).toFixed(2).replace(/\.?0+$/, '') + 'x';
+  document.getElementById('speedVal').textContent = (Math.round(v*100)/100).toFixed(2).replace(/\.?0+$/,'') + 'x';
   document.querySelectorAll('.btn-preset').forEach(b => b.classList.toggle('active', parseFloat(b.dataset.speed) === v));
 }
 document.getElementById('speedSlider').addEventListener('input', e => setSpeed(parseFloat(e.target.value)));
@@ -310,23 +300,25 @@ else { document.getElementById('volSlider').addEventListener('input', e => { aud
 
 function refreshMarkBtn() {
   if (!cur) return;
-  const d = !!done[mk(cur.tId, cur.lId, cur.n)];
+  const d = !!done[mk(cur.yId, cur.tId, cur.lId, cur.n)];
   const btn = document.getElementById('btnMarkDone');
   btn.textContent = d ? '✓ 完了済み（タップで取り消し）' : '✓ 完了にする';
   btn.className = 'btn-mark-done' + (d ? ' is-done' : '');
 }
 document.getElementById('btnMarkDone').addEventListener('click', () => {
   if (!cur) return;
-  toggleDone(cur.tId, cur.lId, cur.n);
+  toggleDone(cur.yId, cur.tId, cur.lId, cur.n);
   refreshMarkBtn();
 });
 
-function openPlayer(tId, lId, n) {
-  const t = cfg.terms.find(x => x.id === tId), l = cfg.levels.find(x => x.id === lId);
-  if (!t || !l) return;
-  cur = { tId, lId, n };
-  document.getElementById('playerTitle').textContent = `${t.name} / ${l.name} / 第${n}講`;
-  audio.src = audioUrl(t, l, n);
+function openPlayer(yId, tId, lId, n) {
+  const y = cfg.years.find(x => x.id === yId);
+  const t = cfg.terms.find(x => x.id === tId);
+  const l = cfg.levels.find(x => x.id === lId);
+  if (!y || !t || !l) return;
+  cur = { yId, tId, lId, n };
+  document.getElementById('playerTitle').textContent = `${y.name} / ${t.name} / ${l.name} / 第${n}講`;
+  audio.src = audioUrl(y, t, l, n);
   audio.currentTime = 0;
   setPI(false);
   document.getElementById('durTime').textContent = '0:00';
@@ -341,11 +333,13 @@ overlay.addEventListener('click', e => { if (e.target === overlay) closePlayer()
 
 function handleParams() {
   const p = new URLSearchParams(location.search);
-  const tId = p.get('term'), lId = p.get('level'), n = parseInt(p.get('lesson'), 10);
-  if (!tId || !lId || !n) return;
-  const t = cfg.terms.find(x => x.id === tId), l = cfg.levels.find(x => x.id === lId);
-  if (!t || !l || n < 1 || n > t.lessons) return;
-  openPlayer(tId, lId, n);
+  const yId = p.get('year'), tId = p.get('term'), lId = p.get('level'), n = parseInt(p.get('lesson'), 10);
+  if (!yId || !tId || !lId || !n) return;
+  const y = cfg.years.find(x => x.id === yId);
+  const t = cfg.terms.find(x => x.id === tId);
+  const l = cfg.levels.find(x => x.id === lId);
+  if (!y || !t || !l || n < 1 || n > t.lessons) return;
+  openPlayer(yId, tId, lId, n);
 }
 
 async function init() {
@@ -353,6 +347,7 @@ async function init() {
   try { await loadCfg(); }
   catch { document.getElementById('tableContainer').innerHTML = '<div class="msg-c err">コンテンツを読み込めませんでした</div>'; return; }
   populateFilters(); render(); handleParams();
+  document.getElementById('filterYear').addEventListener('change', render);
   document.getElementById('filterTerm').addEventListener('change', render);
   document.getElementById('filterLevel').addEventListener('change', render);
 }
