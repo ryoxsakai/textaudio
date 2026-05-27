@@ -155,6 +155,7 @@
 <script>
 const SK = 'dke_settings';
 const DK = 'dke_completed';
+const FK = 'dke_filter';
 const DEFAULTS = {
   r2BaseUrl: 'https://textaudio.ryoxsakai.workers.dev',
   years:  [{ id: 'y1', name: '2026年度', tag: '2026' }],
@@ -258,19 +259,34 @@ function render() {
   }
 }
 
+function saveFilter() {
+  try {
+    localStorage.setItem(FK, JSON.stringify({
+      year:  document.getElementById('filterYear').value,
+      term:  document.getElementById('filterTerm').value,
+      level: document.getElementById('filterLevel').value
+    }));
+  } catch {}
+}
+
 function populateFilters() {
   const ySel = document.getElementById('filterYear');
   const tSel = document.getElementById('filterTerm');
   const lSel = document.getElementById('filterLevel');
   const yv = ySel.value, tv = tSel.value, lv = lSel.value;
+  let saved = {};
+  try { saved = JSON.parse(localStorage.getItem(FK) || '{}'); } catch {}
   ySel.innerHTML = cfg.years.map(y => `<option value="${y.id}">${y.name}</option>`).join('');
   tSel.innerHTML = cfg.terms.map(t => `<option value="${t.id}">${t.name}</option>`).join('');
   lSel.innerHTML = cfg.levels.map(l => `<option value="${l.id}">${l.name}</option>`).join('');
   if (yv) ySel.value = yv;
+  else if (saved.year)      ySel.value = saved.year;
   else if (cfg.defaultYear) ySel.value = cfg.defaultYear;
   if (tv) tSel.value = tv;
+  else if (saved.term)      tSel.value = saved.term;
   else if (cfg.defaultTerm) tSel.value = cfg.defaultTerm;
   if (lv) lSel.value = lv;
+  else if (saved.level)      lSel.value = saved.level;
   else if (cfg.defaultLevel) lSel.value = cfg.defaultLevel;
 }
 
@@ -388,9 +404,9 @@ async function init() {
   try { await loadCfg(); }
   catch { document.getElementById('tableContainer').innerHTML = '<div class="msg-c err">コンテンツを読み込めませんでした</div>'; return; }
   populateFilters(); render(); handleParams();
-  document.getElementById('filterYear').addEventListener('change', render);
-  document.getElementById('filterTerm').addEventListener('change', render);
-  document.getElementById('filterLevel').addEventListener('change', render);
+  document.getElementById('filterYear').addEventListener('change',  () => { saveFilter(); render(); });
+  document.getElementById('filterTerm').addEventListener('change',  () => { saveFilter(); render(); });
+  document.getElementById('filterLevel').addEventListener('change', () => { saveFilter(); render(); });
 }
 init();
 </script>
