@@ -1079,6 +1079,27 @@ function openQr(yId, tId, lId, n) {
 document.getElementById('qrClose').addEventListener('click', () => qrOverlay.classList.remove('open'));
 qrOverlay.addEventListener('click', e => { if (e.target === qrOverlay) qrOverlay.classList.remove('open'); });
 
+/* ── localStorage availability check ── */
+function checkLocalStorage() {
+  try {
+    const testKey = '__dke_test__';
+    localStorage.setItem(testKey, '1');
+    const ok = localStorage.getItem(testKey) === '1';
+    localStorage.removeItem(testKey);
+    return ok;
+  } catch { return false; }
+}
+
+const lsAvailable = checkLocalStorage();
+if (!lsAvailable) {
+  // Show a persistent warning banner
+  const banner = document.createElement('div');
+  banner.style.cssText = 'position:fixed;top:56px;left:0;right:0;z-index:100;background:#c62828;color:#fff;font-size:.85rem;font-weight:600;padding:10px 16px;text-align:center;line-height:1.5;';
+  banner.innerHTML = '⚠️ LocalStorageが無効です。プライベートブラウジングをオフにするか、ブラウザのストレージ設定を確認してください。設定は保存されません。';
+  document.body.appendChild(banner);
+}
+document.getElementById('versionBadge').textContent = `v2026-05-27 ${lsAvailable ? '💾' : '🚫LocalStorage'}`;
+
 /* ── Debug helper ── */
 window.debugLS = function() {
   const raw = localStorage.getItem(SK);
