@@ -349,40 +349,16 @@ function switchTab(tabId) {
 
 /* ── Load settings ── */
 async function loadAllSettings() {
+  // 1. Always load credentials from localStorage (never from R2)
   let local = null;
   try { local = JSON.parse(localStorage.getItem(SK)); } catch {}
-  cfg.r2AccountId   = local?.r2AccountId  || '';
+  cfg.r2AccountId   = local?.r2AccountId   || '';
   cfg.r2AccessKeyId = local?.r2AccessKeyId || '';
-  cfg.r2SecretKey   = local?.r2SecretKey  || '';
-  cfg.r2Bucket      = local?.r2Bucket     || 'textaudio';
-  cfg.r2BaseUrl     = local?.r2BaseUrl    || DEFAULTS.r2BaseUrl;
-  cfg.r2WorkerUrl   = local?.r2WorkerUrl  || '';
-
-  // Try Worker URL first (direct R2 access), then r2BaseUrl
-  const fetchUrls = [...new Set(
-    [cfg.r2WorkerUrl, cfg.r2BaseUrl].filter(Boolean).map(u => u.replace(/\/$/, ''))
-  )];
-  for (const url of fetchUrls) {
-    try {
-      const r = await fetch(`${url}/settings.json`);
-      if (r.ok) {
-        const j = await r.json();
-        // R2 data takes priority only when non-empty; fall back to localStorage for empty arrays
-        cfg.years  = j.years?.length  ? j.years  : (local?.years?.length  ? local.years  : [...DEFAULTS.years]);
-        cfg.terms  = j.terms?.length  ? j.terms  : (local?.terms?.length  ? local.terms  : [...DEFAULTS.terms]);
-        cfg.levels = j.levels?.length ? j.levels : (local?.levels?.length ? local.levels : [...DEFAULTS.levels]);
-        if (j.r2BaseUrl)    cfg.r2BaseUrl    = j.r2BaseUrl;
-        if (j.r2WorkerUrl)  cfg.r2WorkerUrl  = j.r2WorkerUrl;
-        cfg.defaultYear  = j.defaultYear  || local?.defaultYear  || '';
-        cfg.defaultTerm  = j.defaultTerm  || local?.defaultTerm  || '';
-        cfg.defaultLevel = j.defaultLevel || local?.defaultLevel || '';
-        cfg.lessonTitles = j.lessonTitles || local?.lessonTitles || {};
-        persistLocal(); // sync merged state back to localStorage
-        return;
-      }
-    } catch {}
-  }
-  // R2 unavailable — use localStorage, fall back to DEFAULTS
+  cfg.r2SecretKey   = local?.r2SecretKey   || '';
+  cfg.r2Bucket      = local?.r2Bucket      || 'textaudio';
+  cfg.r2BaseUrl     = local?.r2BaseUrl     || DEFAULTS.r2BaseUrl;
+  cfg.r2WorkerUrl   = local?.r2WorkerUrl   || '';
+  // 2. Apply localStorage content settings as the starting point
   cfg.years        = local?.years?.length  ? local.years  : [...DEFAULTS.years];
   cfg.terms        = local?.terms?.length  ? local.terms  : [...DEFAULTS.terms];
   cfg.levels       = local?.levels?.length ? local.levels : [...DEFAULTS.levels];
@@ -390,6 +366,31 @@ async function loadAllSettings() {
   cfg.defaultTerm  = local?.defaultTerm  || '';
   cfg.defaultLevel = local?.defaultLevel || '';
   cfg.lessonTitles = local?.lessonTitles || {};
+
+  // 3. Try to overlay content settings from R2 (never touch credentials)
+  const fetchUrls = [...new Set(
+    [cfg.r2WorkerUrl, cfg.r2BaseUrl].filter(Boolean).map(u => u.replace(/\/$/, ''))
+  )];
+  for (const url of fetchUrls) {
+    try {
+      const r = await fetch(`${url}/settings.json`);
+      if (!r.ok) continue;
+      const j = await r.json();
+      // Only override if R2 has actual data (non-empty)
+      if (j.years?.length)  cfg.years  = j.years;
+      if (j.terms?.length)  cfg.terms  = j.terms;
+      if (j.levels?.length) cfg.levels = j.levels;
+      if (j.defaultYear)  cfg.defaultYear  = j.defaultYear;
+      if (j.defaultTerm)  cfg.defaultTerm  = j.defaultTerm;
+      if (j.defaultLevel) cfg.defaultLevel = j.defaultLevel;
+      if (j.lessonTitles && Object.keys(j.lessonTitles).length) cfg.lessonTitles = j.lessonTitles;
+      // Propagate Worker/Base URL from R2 only if not already in localStorage
+      if (j.r2WorkerUrl && !local?.r2WorkerUrl) cfg.r2WorkerUrl = j.r2WorkerUrl;
+      if (j.r2BaseUrl   && !local?.r2BaseUrl)   cfg.r2BaseUrl   = j.r2BaseUrl;
+      break; // success — stop trying further URLs
+    } catch {}
+  }
+  // Note: intentionally NO persistLocal() here — avoids overwriting credentials
 }
 
 function persistLocal() {
@@ -565,30 +566,30 @@ document.getElementById('saveR2Btn').addEventListener('click', async () => {
   cfg.r2SecretKey   = document.getElementById('r2SecretKey').value.trim();
   cfg.r2Bucket      = document.getElementById('r2Bucket').value.trim() || 'textaudio';
   cfg.r2WorkerUrl   = document.getElementById('r2WorkerUrl').value.trim().replace(/\/$/, '');
-  persistLocal();
-  // After saving credentials, reload settings.json from R2 to restore content settings
+  persistLocal(); // Save credentials to localStorage — only called once here
+
+  // Try to restore content settings from R2 (update cfg in memory only; no second persistLocal)
   const fetchUrls = [...new Set([cfg.r2WorkerUrl, cfg.r2BaseUrl].filter(Boolean).map(u => u.replace(/\/$/, '')))];
   let loaded = false;
   for (const url of fetchUrls) {
     try {
       const r = await fetch(`${url}/settings.json`);
-      if (r.ok) {
-        const j = await r.json();
-        cfg.years        = j.years  || cfg.years  || [];
-        cfg.terms        = j.terms  || cfg.terms  || [];
-        cfg.levels       = j.levels || cfg.levels || [];
-        if (j.defaultYear)  cfg.defaultYear  = j.defaultYear;
-        if (j.defaultTerm)  cfg.defaultTerm  = j.defaultTerm;
-        if (j.defaultLevel) cfg.defaultLevel = j.defaultLevel;
-        if (j.lessonTitles) cfg.lessonTitles = j.lessonTitles;
-        persistLocal();
-        renderYearList(); renderTermList(); renderLevelList();
-        loaded = true;
-        break;
-      }
+      if (!r.ok) continue;
+      const j = await r.json();
+      if (j.years?.length)  { cfg.years  = j.years;  loaded = true; }
+      if (j.terms?.length)  { cfg.terms  = j.terms;  loaded = true; }
+      if (j.levels?.length) { cfg.levels = j.levels; loaded = true; }
+      if (j.defaultYear)  cfg.defaultYear  = j.defaultYear;
+      if (j.defaultTerm)  cfg.defaultTerm  = j.defaultTerm;
+      if (j.defaultLevel) cfg.defaultLevel = j.defaultLevel;
+      if (j.lessonTitles && Object.keys(j.lessonTitles).length) cfg.lessonTitles = j.lessonTitles;
+      break;
     } catch {}
   }
-  toast(loaded ? 'R2設定を保存し、コンテンツ設定を復元しました' : 'R2設定をLocalStorageに保存しました（settings.json未取得）');
+  renderYearList(); renderTermList(); renderLevelList();
+  toast(loaded
+    ? 'R2設定を保存し、コンテンツ設定をR2から復元しました'
+    : 'R2設定をLocalStorageに保存しました（R2のコンテンツ設定は空 — コンテンツ設定タブで再入力してください）');
 });
 document.getElementById('testConnBtn').addEventListener('click', async () => {
   const url = document.getElementById('r2BaseUrl').value.trim().replace(/\/$/, '');

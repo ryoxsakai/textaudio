@@ -176,30 +176,34 @@ async function loadCfg() {
   const workerUrl = local?.r2WorkerUrl?.replace(/\/$/, '');
   const baseUrl   = (local?.r2BaseUrl || DEFAULTS.r2BaseUrl).replace(/\/$/, '');
   const fetchUrls = [...new Set([workerUrl, baseUrl].filter(Boolean))];
+  // Apply localStorage as starting point
+  cfg = {
+    r2BaseUrl:    local?.r2BaseUrl    || DEFAULTS.r2BaseUrl,
+    years:        local?.years?.length  ? local.years  : [...DEFAULTS.years],
+    terms:        local?.terms?.length  ? local.terms  : [...DEFAULTS.terms],
+    levels:       local?.levels?.length ? local.levels : [...DEFAULTS.levels],
+    defaultYear:  local?.defaultYear  || '',
+    defaultTerm:  local?.defaultTerm  || '',
+    defaultLevel: local?.defaultLevel || '',
+    lessonTitles: local?.lessonTitles || {},
+  };
+  // Overlay with R2 data (only non-empty values override)
   for (const url of fetchUrls) {
     try {
       const r = await fetch(`${url}/settings.json`);
-      if (r.ok) {
-        const j = await r.json();
-        // R2 takes priority only for non-empty arrays; fall back to localStorage
-        cfg = Object.assign({}, j);
-        cfg.years  = j.years?.length  ? j.years  : (local?.years?.length  ? local.years  : [...DEFAULTS.years]);
-        cfg.terms  = j.terms?.length  ? j.terms  : (local?.terms?.length  ? local.terms  : [...DEFAULTS.terms]);
-        cfg.levels = j.levels?.length ? j.levels : (local?.levels?.length ? local.levels : [...DEFAULTS.levels]);
-        if (!cfg.lessonTitles) cfg.lessonTitles = local?.lessonTitles || {};
-        // Save merged state (R2 content + local credentials) to localStorage
-        localStorage.setItem(SK, JSON.stringify(Object.assign({}, local || {}, cfg)));
-        return;
-      }
+      if (!r.ok) continue;
+      const j = await r.json();
+      if (j.years?.length)  cfg.years  = j.years;
+      if (j.terms?.length)  cfg.terms  = j.terms;
+      if (j.levels?.length) cfg.levels = j.levels;
+      if (j.r2BaseUrl)    cfg.r2BaseUrl    = j.r2BaseUrl;
+      if (j.defaultYear)  cfg.defaultYear  = j.defaultYear;
+      if (j.defaultTerm)  cfg.defaultTerm  = j.defaultTerm;
+      if (j.defaultLevel) cfg.defaultLevel = j.defaultLevel;
+      if (j.lessonTitles && Object.keys(j.lessonTitles).length) cfg.lessonTitles = j.lessonTitles;
+      break;
     } catch {}
   }
-  if (local?.terms?.length && local?.levels?.length) {
-    cfg = local;
-    if (!cfg.years?.length) cfg.years = [...DEFAULTS.years];
-    if (!cfg.lessonTitles) cfg.lessonTitles = {};
-    return;
-  }
-  cfg = Object.assign({}, DEFAULTS, { lessonTitles: {} });
 }
 
 function allRows() {
