@@ -195,6 +195,13 @@
     <select id="upTerm"><option value="">学期を選択</option></select>
     <select id="upLevel"><option value="">レベルを選択</option></select>
   </div>
+  <div style="background:#f8f9fb;border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+    <div style="flex:1;min-width:0;">
+      <div style="font-size:.7rem;color:var(--muted);margin-bottom:2px;">R2 APIエンドポイント</div>
+      <div id="r2ApiUrlDisplay" style="font-size:.75rem;font-family:monospace;color:var(--navy);word-break:break-all;">—</div>
+    </div>
+    <button class="btn btn-ghost" id="testUploadApiBtn" style="flex-shrink:0;height:36px;font-size:.78rem;">接続テスト</button>
+  </div>
   <div class="file-drop" id="fileDrop">
     <div>タップまたはドラッグでMP3を選択</div>
     <div style="font-size:.75rem;margin-top:4px;">複数選択可・ファイル名の数字を講番号に自動反映</div>
@@ -503,7 +510,36 @@ function populateUploadSelects() {
   yS.innerHTML = '<option value="">年度を選択</option>' + cfg.years.map(y => `<option value="${y.id}">${y.name}</option>`).join('');
   tS.innerHTML = '<option value="">学期を選択</option>' + cfg.terms.map(t => `<option value="${t.id}">${t.name}</option>`).join('');
   lS.innerHTML = '<option value="">レベルを選択</option>' + cfg.levels.map(l => `<option value="${l.id}">${l.name}</option>`).join('');
+  updateApiUrlDisplay();
 }
+
+function updateApiUrlDisplay() {
+  const el = document.getElementById('r2ApiUrlDisplay');
+  el.textContent = cfg.r2AccountId && cfg.r2Bucket
+    ? `https://${cfg.r2AccountId}.r2.cloudflarestorage.com/${cfg.r2Bucket}/`
+    : '（R2設定でAccount IDとバケット名を入力してください）';
+}
+
+document.getElementById('testUploadApiBtn').addEventListener('click', async () => {
+  if (!cfg.r2AccountId || !cfg.r2Bucket) {
+    toast('R2設定でAccount IDとバケット名を確認してください', 'err'); return;
+  }
+  const url = `https://${cfg.r2AccountId}.r2.cloudflarestorage.com/${cfg.r2Bucket}/settings.json`;
+  const btn = document.getElementById('testUploadApiBtn');
+  btn.disabled = true; btn.textContent = '確認中…';
+  try {
+    const r = await fetch(url, { mode: 'cors' });
+    if (r.ok || r.status === 403 || r.status === 404) {
+      toast(`エンドポイント到達OK（HTTP ${r.status}）— CORS設定済み`);
+    } else {
+      toast(`HTTP ${r.status} — エンドポイントは到達できましたが予期しないレスポンス`, 'err');
+    }
+  } catch (e) {
+    toast('到達失敗 — Account IDが間違っているか、CORSが未設定です', 'err');
+  } finally {
+    btn.disabled = false; btn.textContent = '接続テスト';
+  }
+});
 
 let selectedFiles = [];
 let lessonNums = [];
