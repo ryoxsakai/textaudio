@@ -537,29 +537,46 @@ document.getElementById('testUploadApiBtn').addEventListener('click', async () =
   if (!cfg.r2AccountId || !cfg.r2Bucket) {
     toast('R2設定でAccount IDとバケット名を確認してください', 'err'); return;
   }
-  const url = `https://${cfg.r2AccountId}.r2.cloudflarestorage.com/${cfg.r2Bucket}/_cors_test_`;
+  // Unique URL per test to bypass browser preflight cache
+  const url = `https://${cfg.r2AccountId}.r2.cloudflarestorage.com/${cfg.r2Bucket}/_cors_test_${Date.now()}`;
   const btn = document.getElementById('testUploadApiBtn');
   btn.disabled = true; btn.textContent = '確認中…';
 
+  // Step 1: simple PUT (no Authorization) to isolate Authorization-specific issue
+  let simpleOk = false, simpleErr = '';
   try {
     const r = await fetch(url, {
+      method: 'PUT',
+      mode: 'cors',
+      headers: { 'Content-Type': 'audio/mpeg' },
+      body: new Uint8Array(0)
+    });
+    simpleOk = true; simpleErr = `HTTP ${r.status}`;
+  } catch (e) { simpleErr = e.message; }
+
+  // Step 2: PUT with all signed headers (this should match the real upload)
+  let authOk = false, authErr = '';
+  try {
+    const r = await fetch(url + '_auth', {
       method: 'PUT',
       mode: 'cors',
       headers: {
         'Content-Type': 'audio/mpeg',
         'x-amz-date': '20240101T000000Z',
-        'x-amz-content-sha256': 'e3b0c44298fc1c149afbf4c8996fb924',
+        'x-amz-content-sha256': 'UNSIGNED-PAYLOAD',
         'Authorization': 'AWS4-HMAC-SHA256 Credential=test/20240101/auto/s3/aws4_request, SignedHeaders=content-type;host;x-amz-content-sha256;x-amz-date, Signature=0000'
       },
       body: new Uint8Array(0)
     });
-    toast(`CORS OK（HTTP ${r.status}）— アップロード可能な状態です`);
-  } catch (e) {
-    console.error('CORS test failed:', e, 'URL:', url, 'Origin:', location.origin);
-    alert(`接続テスト失敗\n\nURL: ${url}\nOrigin: ${location.origin}\nError: ${e.message}\n\nブラウザの開発ツール（Console）でも詳細を確認してください。`);
-  } finally {
-    btn.disabled = false; btn.textContent = '接続テスト';
+    authOk = true; authErr = `HTTP ${r.status}`;
+  } catch (e) { authErr = e.message; }
+
+  if (authOk) {
+    toast(`CORS OK（${authErr}）— アップロード可能な状態です`);
+  } else {
+    alert(`接続テスト結果\n\nバケット URL: ${url}\nOrigin: ${location.origin}\n\n[1] PUT (Content-Type のみ): ${simpleOk ? 'OK ' + simpleErr : '失敗 ' + simpleErr}\n[2] PUT (Authorization 含む): ${authOk ? 'OK ' + authErr : '失敗 ' + authErr}\n\n[2] のみ失敗する場合 → R2 CORS の AllowedHeaders に "authorization" が無いか、保存されていない可能性があります。\n[1] [2] 両方失敗する場合 → CORS そのものが未設定、または Origin が許可されていません。`);
   }
+  btn.disabled = false; btn.textContent = '接続テスト';
 });
 
 let selectedFiles = [];
