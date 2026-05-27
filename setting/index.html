@@ -307,7 +307,7 @@
 const SK = 'dke_settings';
 const BASE_URL = 'https://ryoxsakai.github.io/textaudio';
 const DEFAULTS = {
-  r2BaseUrl: BASE_URL,
+  r2BaseUrl: 'https://textaudio.ryoxsakai.workers.dev',
   years:  [{ id: 'y1', name: '2026年度', tag: '2026' }],
   terms:  [{ id: 't1', name: '前期', tag: 'term1', lessons: 3 }, { id: 't2', name: '夏期', tag: 'term2', lessons: 2 }],
   levels: [{ id: 'l1', name: 'High 読解', tag: 'high_reading' }, { id: 'l2', name: 'High 構文', tag: 'high_structure' }, { id: 'l3', name: 'Standard 読解', tag: 'standard_reading' }, { id: 'l4', name: 'Standard 構文', tag: 'standard_structure' }]
@@ -317,7 +317,8 @@ let cfg = {
   r2BaseUrl: '', r2AccountId: '', r2AccessKeyId: '', r2SecretKey: '', r2Bucket: 'textaudio',
   r2WorkerUrl: '',
   years: [], terms: [], levels: [],
-  defaultYear: '', defaultTerm: '', defaultLevel: ''
+  defaultYear: '', defaultTerm: '', defaultLevel: '',
+  lessonTitles: {}
 };
 
 /* ── Toast ── */
@@ -350,35 +351,42 @@ function switchTab(tabId) {
 async function loadAllSettings() {
   let local = null;
   try { local = JSON.parse(localStorage.getItem(SK)); } catch {}
-  cfg.r2AccountId  = local?.r2AccountId  || '';
+  cfg.r2AccountId   = local?.r2AccountId  || '';
   cfg.r2AccessKeyId = local?.r2AccessKeyId || '';
-  cfg.r2SecretKey  = local?.r2SecretKey  || '';
-  cfg.r2Bucket     = local?.r2Bucket     || 'textaudio';
-  cfg.r2BaseUrl    = local?.r2BaseUrl    || DEFAULTS.r2BaseUrl;
-  cfg.r2WorkerUrl  = local?.r2WorkerUrl  || '';
+  cfg.r2SecretKey   = local?.r2SecretKey  || '';
+  cfg.r2Bucket      = local?.r2Bucket     || 'textaudio';
+  cfg.r2BaseUrl     = local?.r2BaseUrl    || DEFAULTS.r2BaseUrl;
+  cfg.r2WorkerUrl   = local?.r2WorkerUrl  || '';
 
-  if (cfg.r2BaseUrl) {
+  // Try Worker URL first (direct R2 access), then r2BaseUrl
+  const fetchUrls = [...new Set(
+    [cfg.r2WorkerUrl, cfg.r2BaseUrl].filter(Boolean).map(u => u.replace(/\/$/, ''))
+  )];
+  for (const url of fetchUrls) {
     try {
-      const r = await fetch(`${cfg.r2BaseUrl}/settings.json`);
+      const r = await fetch(`${url}/settings.json`);
       if (r.ok) {
         const j = await r.json();
         cfg.years  = j.years  || [...DEFAULTS.years];
         cfg.terms  = j.terms  || [...DEFAULTS.terms];
         cfg.levels = j.levels || [...DEFAULTS.levels];
-        if (j.r2BaseUrl)    cfg.r2BaseUrl    = j.r2BaseUrl;
+        if (j.r2BaseUrl)   cfg.r2BaseUrl   = j.r2BaseUrl;
+        if (j.r2WorkerUrl) cfg.r2WorkerUrl = j.r2WorkerUrl;
         if (j.defaultYear)  cfg.defaultYear  = j.defaultYear;
         if (j.defaultTerm)  cfg.defaultTerm  = j.defaultTerm;
         if (j.defaultLevel) cfg.defaultLevel = j.defaultLevel;
+        if (j.lessonTitles) cfg.lessonTitles = j.lessonTitles;
         return;
       }
     } catch {}
   }
-  cfg.years  = (local?.years  && local.years.length)  ? local.years  : [...DEFAULTS.years];
-  cfg.terms  = (local?.terms  && local.terms.length)  ? local.terms  : [...DEFAULTS.terms];
-  cfg.levels = (local?.levels && local.levels.length) ? local.levels : [...DEFAULTS.levels];
+  cfg.years        = (local?.years  && local.years.length)  ? local.years  : [...DEFAULTS.years];
+  cfg.terms        = (local?.terms  && local.terms.length)  ? local.terms  : [...DEFAULTS.terms];
+  cfg.levels       = (local?.levels && local.levels.length) ? local.levels : [...DEFAULTS.levels];
   cfg.defaultYear  = local?.defaultYear  || '';
   cfg.defaultTerm  = local?.defaultTerm  || '';
   cfg.defaultLevel = local?.defaultLevel || '';
+  cfg.lessonTitles = local?.lessonTitles || {};
 }
 
 function persistLocal() {
@@ -387,8 +395,34 @@ function persistLocal() {
     r2AccessKeyId: cfg.r2AccessKeyId, r2SecretKey: cfg.r2SecretKey, r2Bucket: cfg.r2Bucket,
     r2WorkerUrl: cfg.r2WorkerUrl,
     years: cfg.years, terms: cfg.terms, levels: cfg.levels,
-    defaultYear: cfg.defaultYear, defaultTerm: cfg.defaultTerm, defaultLevel: cfg.defaultLevel
+    defaultYear: cfg.defaultYear, defaultTerm: cfg.defaultTerm, defaultLevel: cfg.defaultLevel,
+    lessonTitles: cfg.lessonTitles
   }));
+}
+
+function settingsJson() {
+  return JSON.stringify({
+    r2BaseUrl: cfg.r2BaseUrl, r2WorkerUrl: cfg.r2WorkerUrl,
+    years: cfg.years, terms: cfg.terms, levels: cfg.levels,
+    defaultYear: cfg.defaultYear, defaultTerm: cfg.defaultTerm, defaultLevel: cfg.defaultLevel,
+    lessonTitles: cfg.lessonTitles
+  }, null, 2);
+}
+
+async function saveSettingsJson() {
+  const json = settingsJson();
+  if (cfg.r2WorkerUrl || (cfg.r2AccountId && cfg.r2AccessKeyId && cfg.r2SecretKey && cfg.r2Bucket)) {
+    let res;
+    if (cfg.r2WorkerUrl) {
+      res = await putViaWorker('settings.json', json, 'application/json');
+    } else {
+      const url = `https://${cfg.r2AccountId}.r2.cloudflarestorage.com/${cfg.r2Bucket}/settings.json`;
+      res = await signedPut(url, json, 'application/json');
+    }
+    if (!res.ok) throw new Error(res.status);
+  } else {
+    throw new Error('R2未設定');
+  }
 }
 
 /* ── CRUD helper ── */
@@ -501,24 +535,11 @@ document.getElementById('saveContentBtn').addEventListener('click', async () => 
   if (errs.length) { toast(errs[0], 'err'); return; }
 
   persistLocal();
-  const json = JSON.stringify({ r2BaseUrl: cfg.r2BaseUrl, years: cfg.years, terms: cfg.terms, levels: cfg.levels, defaultYear: cfg.defaultYear, defaultTerm: cfg.defaultTerm, defaultLevel: cfg.defaultLevel }, null, 2);
-
-  if (cfg.r2WorkerUrl || (cfg.r2AccountId && cfg.r2AccessKeyId && cfg.r2SecretKey && cfg.r2Bucket)) {
-    try {
-      let res;
-      if (cfg.r2WorkerUrl) {
-        res = await putViaWorker('settings.json', json, 'application/json');
-      } else {
-        const url = `https://${cfg.r2AccountId}.r2.cloudflarestorage.com/${cfg.r2Bucket}/settings.json`;
-        res = await signedPut(url, json, 'application/json');
-      }
-      if (!res.ok) throw new Error(res.status);
-      toast('保存しました（LocalStorage + R2）');
-    } catch (e) {
-      toast('LocalStorageに保存しました（R2アップロード失敗: ' + e.message + '）', 'err');
-    }
-  } else {
-    toast('LocalStorageに保存しました（R2未設定）');
+  try {
+    await saveSettingsJson();
+    toast('保存しました（LocalStorage + R2）');
+  } catch (e) {
+    toast(e.message === 'R2未設定' ? 'LocalStorageに保存しました（R2未設定）' : 'LocalStorageに保存しました（R2アップロード失敗: ' + e.message + '）', e.message === 'R2未設定' ? 'ok' : 'err');
   }
 });
 
@@ -531,15 +552,20 @@ function loadR2Fields() {
   document.getElementById('r2Bucket').value      = cfg.r2Bucket     || 'textaudio';
   document.getElementById('r2WorkerUrl').value   = cfg.r2WorkerUrl  || '';
 }
-document.getElementById('saveR2Btn').addEventListener('click', () => {
-  cfg.r2BaseUrl    = document.getElementById('r2BaseUrl').value.trim().replace(/\/$/, '');
-  cfg.r2AccountId  = document.getElementById('r2AccountId').value.trim();
+document.getElementById('saveR2Btn').addEventListener('click', async () => {
+  cfg.r2BaseUrl     = document.getElementById('r2BaseUrl').value.trim().replace(/\/$/, '');
+  cfg.r2AccountId   = document.getElementById('r2AccountId').value.trim();
   cfg.r2AccessKeyId = document.getElementById('r2AccessKeyId').value.trim();
-  cfg.r2SecretKey  = document.getElementById('r2SecretKey').value.trim();
-  cfg.r2Bucket     = document.getElementById('r2Bucket').value.trim() || 'textaudio';
-  cfg.r2WorkerUrl  = document.getElementById('r2WorkerUrl').value.trim().replace(/\/$/, '');
+  cfg.r2SecretKey   = document.getElementById('r2SecretKey').value.trim();
+  cfg.r2Bucket      = document.getElementById('r2Bucket').value.trim() || 'textaudio';
+  cfg.r2WorkerUrl   = document.getElementById('r2WorkerUrl').value.trim().replace(/\/$/, '');
   persistLocal();
-  toast('R2設定を保存しました');
+  try {
+    await saveSettingsJson();
+    toast('R2設定を保存しました（LocalStorage + R2）');
+  } catch {
+    toast('R2設定をLocalStorageに保存しました');
+  }
 });
 document.getElementById('testConnBtn').addEventListener('click', async () => {
   const url = document.getElementById('r2BaseUrl').value.trim().replace(/\/$/, '');
@@ -907,23 +933,11 @@ document.getElementById('saveTitlesBtn').addEventListener('click', async () => {
     else delete cfg.lessonTitles[key];
   });
   persistLocal();
-  const json = JSON.stringify({ r2BaseUrl: cfg.r2BaseUrl, years: cfg.years, terms: cfg.terms, levels: cfg.levels, defaultYear: cfg.defaultYear, defaultTerm: cfg.defaultTerm, defaultLevel: cfg.defaultLevel, lessonTitles: cfg.lessonTitles }, null, 2);
-  if (cfg.r2WorkerUrl || (cfg.r2AccountId && cfg.r2AccessKeyId && cfg.r2SecretKey && cfg.r2Bucket)) {
-    try {
-      let res;
-      if (cfg.r2WorkerUrl) {
-        res = await putViaWorker('settings.json', json, 'application/json');
-      } else {
-        const url = `https://${cfg.r2AccountId}.r2.cloudflarestorage.com/${cfg.r2Bucket}/settings.json`;
-        res = await signedPut(url, json, 'application/json');
-      }
-      if (!res.ok) throw new Error(res.status);
-      toast('タイトルを保存しました（LocalStorage + R2）');
-    } catch (e) {
-      toast('LocalStorageに保存しました（R2アップロード失敗: ' + e.message + '）', 'err');
-    }
-  } else {
-    toast('LocalStorageに保存しました（R2未設定）');
+  try {
+    await saveSettingsJson();
+    toast('タイトルを保存しました（LocalStorage + R2）');
+  } catch (e) {
+    toast(e.message === 'R2未設定' ? 'LocalStorageに保存しました（R2未設定）' : 'LocalStorageに保存しました（R2アップロード失敗: ' + e.message + '）', e.message === 'R2未設定' ? 'ok' : 'err');
   }
 });
 

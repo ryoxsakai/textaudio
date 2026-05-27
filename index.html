@@ -156,7 +156,7 @@
 const SK = 'dke_settings';
 const DK = 'dke_completed';
 const DEFAULTS = {
-  r2BaseUrl: 'https://ryoxsakai.github.io/textaudio',
+  r2BaseUrl: 'https://textaudio.ryoxsakai.workers.dev',
   years:  [{ id: 'y1', name: '2026年度', tag: '2026' }],
   terms:  [{ id: 't1', name: '前期', tag: 'term1', lessons: 3 }, { id: 't2', name: '夏期', tag: 'term2', lessons: 2 }],
   levels: [{ id: 'l1', name: 'High 読解', tag: 'high_reading' }, { id: 'l2', name: 'High 構文', tag: 'high_structure' }, { id: 'l3', name: 'Standard 読解', tag: 'standard_reading' }, { id: 'l4', name: 'Standard 構文', tag: 'standard_structure' }]
@@ -172,18 +172,24 @@ function mk(yId, tId, lId, n) { return `${yId}_${tId}_${lId}_${n}`; }
 async function loadCfg() {
   let local = null;
   try { local = JSON.parse(localStorage.getItem(SK)); } catch {}
-  const base = (local && local.r2BaseUrl) || DEFAULTS.r2BaseUrl;
-  try {
-    const r = await fetch(`${base}/settings.json`);
-    if (r.ok) {
-      const j = await r.json();
-      cfg = j;
-      if (!cfg.years) cfg.years = [...DEFAULTS.years];
-      if (!cfg.lessonTitles) cfg.lessonTitles = {};
-      localStorage.setItem(SK, JSON.stringify(Object.assign({}, local || {}, j)));
-      return;
-    }
-  } catch {}
+  // Try Worker URL first (direct R2 proxy), then r2BaseUrl, then hardcoded default
+  const workerUrl = local?.r2WorkerUrl?.replace(/\/$/, '');
+  const baseUrl   = (local?.r2BaseUrl || DEFAULTS.r2BaseUrl).replace(/\/$/, '');
+  const fetchUrls = [...new Set([workerUrl, baseUrl].filter(Boolean))];
+  for (const url of fetchUrls) {
+    try {
+      const r = await fetch(`${url}/settings.json`);
+      if (r.ok) {
+        const j = await r.json();
+        cfg = j;
+        if (!cfg.years) cfg.years = [...DEFAULTS.years];
+        if (!cfg.lessonTitles) cfg.lessonTitles = {};
+        // Merge: R2 content overrides local, but keep credentials from local
+        localStorage.setItem(SK, JSON.stringify(Object.assign({}, local || {}, j)));
+        return;
+      }
+    } catch {}
+  }
   if (local && local.terms && local.levels) {
     cfg = local;
     if (!cfg.years) cfg.years = [...DEFAULTS.years];
