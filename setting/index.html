@@ -829,6 +829,7 @@ function allRows() {
 function audioUrl(y, t, l, n) { return `${cfg.r2BaseUrl}/${y.tag}/${t.tag}/${l.tag}/lesson${n}.mp3`; }
 function qrUrl(y, t, l, n)    { return `${BASE_URL}/?year=${y.id}&term=${t.id}&level=${l.id}&lesson=${n}`; }
 
+let _clFiltersReady = false;
 function populateClFilters() {
   const yS = document.getElementById('clYear');
   const tS = document.getElementById('clTerm');
@@ -840,10 +841,16 @@ function populateClFilters() {
   if (yv) yS.value = yv;
   if (tv) tS.value = tv;
   if (lv) lS.value = lv;
+  if (!_clFiltersReady) {
+    ['clYear','clTerm','clLevel'].forEach(id =>
+      document.getElementById(id).addEventListener('change', renderContentList)
+    );
+    _clFiltersReady = true;
+  }
 }
 
 function renderContentList() {
-  populateClFilters();
+  if (!_clFiltersReady) populateClFilters();
   const yF = document.getElementById('clYear').value;
   const tF = document.getElementById('clTerm').value;
   const lF = document.getElementById('clLevel').value;
