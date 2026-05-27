@@ -1,14 +1,16 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "textaudio",
+  "main": "worker.js",
   "compatibility_date": "2026-05-27",
+  "compatibility_flags": ["nodejs_compat"],
   "observability": {
     "enabled": true
   },
-  "assets": {
-    "directory": "."
-  },
-  "compatibility_flags": [
-    "nodejs_compat"
+  "r2_buckets": [
+    {
+      "binding": "BUCKET",
+      "bucket_name": "textaudio"
+    }
   ]
 }
