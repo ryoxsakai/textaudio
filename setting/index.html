@@ -133,6 +133,7 @@
 <header class="app-header">
   <a href="../">←</a>
   <span class="app-title">設定</span>
+  <span id="versionBadge" style="margin-left:auto;font-size:.7rem;opacity:.6;font-weight:400;">v2026-05-27</span>
 </header>
 
 <nav class="tab-nav">
@@ -160,6 +161,7 @@
     <button class="btn btn-add" id="addLevelBtn">＋ レベルを追加</button>
   </div>
   <button class="btn btn-navy btn-save" id="saveContentBtn">保存する</button>
+  <div id="contentStatus" style="margin-top:10px;font-size:.75rem;color:var(--muted);text-align:center;min-height:18px;"></div>
 </div>
 
 <!-- Tab2: R2設定 -->
@@ -391,6 +393,19 @@ async function loadAllSettings() {
     } catch {}
   }
   // Note: intentionally NO persistLocal() here — avoids overwriting credentials
+
+  // Show load status
+  const statusEl = document.getElementById('contentStatus');
+  if (statusEl) {
+    statusEl.textContent = `ロード済み: 年度${cfg.years.length}件 / 学期${cfg.terms.length}件 / レベル${cfg.levels.length}件`;
+  }
+  console.log('[DKE] loadAllSettings done', {
+    years: cfg.years.length,
+    terms: cfg.terms.length,
+    levels: cfg.levels.length,
+    localStorage: !!localStorage.getItem(SK),
+    localData: localStorage.getItem(SK)
+  });
 }
 
 function persistLocal() {
@@ -542,12 +557,16 @@ document.getElementById('saveContentBtn').addEventListener('click', async () => 
   if (errs.length) { toast(errs[0], 'err'); return; }
 
   persistLocal();
+  const savedCount = `年度${cfg.years.length} / 学期${cfg.terms.length} / レベル${cfg.levels.length}`;
+  const statusEl = document.getElementById('contentStatus');
+  if (statusEl) statusEl.textContent = `保存済み: ${savedCount}`;
   try {
     await saveSettingsJson();
-    toast('保存しました（LocalStorage + R2）');
+    toast(`保存しました（LocalStorage + R2） [${savedCount}]`);
   } catch (e) {
-    toast(e.message === 'R2未設定' ? 'LocalStorageに保存しました（R2未設定）' : 'LocalStorageに保存しました（R2アップロード失敗: ' + e.message + '）', e.message === 'R2未設定' ? 'ok' : 'err');
+    toast(e.message === 'R2未設定' ? `LocalStorageに保存しました（R2未設定）[${savedCount}]` : `LocalStorageに保存しました（R2失敗: ${e.message}）[${savedCount}]`, e.message === 'R2未設定' ? 'ok' : 'err');
   }
+  console.log('[DKE] saved to localStorage', JSON.parse(localStorage.getItem(SK)));
 });
 
 /* ── R2 settings ── */
@@ -1059,6 +1078,20 @@ function openQr(yId, tId, lId, n) {
 }
 document.getElementById('qrClose').addEventListener('click', () => qrOverlay.classList.remove('open'));
 qrOverlay.addEventListener('click', e => { if (e.target === qrOverlay) qrOverlay.classList.remove('open'); });
+
+/* ── Debug helper ── */
+window.debugLS = function() {
+  const raw = localStorage.getItem(SK);
+  if (!raw) { console.log('[DKE] localStorage: empty'); return null; }
+  const data = JSON.parse(raw);
+  console.log('[DKE] localStorage:', JSON.stringify(data, null, 2));
+  console.log('[DKE] cfg (in memory):', JSON.stringify({
+    years: cfg.years, terms: cfg.terms, levels: cfg.levels,
+    defaultYear: cfg.defaultYear, defaultTerm: cfg.defaultTerm, defaultLevel: cfg.defaultLevel,
+    r2BaseUrl: cfg.r2BaseUrl, r2WorkerUrl: cfg.r2WorkerUrl
+  }, null, 2));
+  return data;
+};
 
 /* ── Init ── */
 async function init() {
