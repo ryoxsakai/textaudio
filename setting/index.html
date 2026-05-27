@@ -192,6 +192,11 @@
     <input class="form-input" id="r2WorkerUrl" type="url" placeholder="https://textaudio-upload.xxxxx.workers.dev">
     <div class="form-hint">Cloudflare Worker 経由でアップロードする場合に入力。設定すると AWS 署名不要になります。</div>
   </div>
+  <div class="form-row">
+    <label class="form-label">サイトURL <span style="font-weight:400;color:var(--muted)">（QRコード用）</span></label>
+    <input class="form-input" id="siteUrl" type="url" placeholder="https://audio.lrnr.jp">
+    <div class="form-hint">QRコードに埋め込むサイトのベースURL。未設定の場合はデフォルト値を使用。</div>
+  </div>
   <div style="display:flex;gap:10px;margin-top:4px;">
     <button class="btn btn-ghost" id="testConnBtn" style="flex:1;height:44px;">接続テスト</button>
     <button class="btn btn-navy btn-save" id="saveR2Btn" style="flex:2;">保存する</button>
@@ -305,7 +310,7 @@
 
 <script>
 const SK = 'dke_settings';
-const BASE_URL = 'https://ryoxsakai.github.io/textaudio';
+const BASE_URL = 'https://audio.lrnr.jp';
 const DEFAULTS = {
   r2BaseUrl: 'https://textaudio.ryoxsakai.workers.dev',
   years:  [{ id: 'y1', name: '2026年度', tag: '2026' }],
@@ -315,7 +320,7 @@ const DEFAULTS = {
 
 let cfg = {
   r2BaseUrl: '', r2AccountId: '', r2AccessKeyId: '', r2SecretKey: '', r2Bucket: 'textaudio',
-  r2WorkerUrl: '',
+  r2WorkerUrl: '', siteUrl: '',
   years: [], terms: [], levels: [],
   defaultYear: '', defaultTerm: '', defaultLevel: '',
   lessonTitles: {}
@@ -358,6 +363,7 @@ async function loadAllSettings() {
   cfg.r2Bucket      = local?.r2Bucket      || 'textaudio';
   cfg.r2BaseUrl     = local?.r2BaseUrl     || DEFAULTS.r2BaseUrl;
   cfg.r2WorkerUrl   = local?.r2WorkerUrl   || '';
+  cfg.siteUrl       = local?.siteUrl       || '';
   // 2. Apply localStorage content settings as the starting point
   cfg.years        = local?.years?.length  ? local.years  : [...DEFAULTS.years];
   cfg.terms        = local?.terms?.length  ? local.terms  : [...DEFAULTS.terms];
@@ -384,9 +390,10 @@ async function loadAllSettings() {
       if (j.defaultTerm)  cfg.defaultTerm  = j.defaultTerm;
       if (j.defaultLevel) cfg.defaultLevel = j.defaultLevel;
       if (j.lessonTitles && Object.keys(j.lessonTitles).length) cfg.lessonTitles = j.lessonTitles;
-      // Propagate Worker/Base URL from R2 only if not already in localStorage
+      // Propagate Worker/Base/Site URL from R2 only if not already in localStorage
       if (j.r2WorkerUrl && !local?.r2WorkerUrl) cfg.r2WorkerUrl = j.r2WorkerUrl;
       if (j.r2BaseUrl   && !local?.r2BaseUrl)   cfg.r2BaseUrl   = j.r2BaseUrl;
+      if (j.siteUrl     && !local?.siteUrl)     cfg.siteUrl     = j.siteUrl;
       break; // success — stop trying further URLs
     } catch {}
   }
@@ -410,7 +417,7 @@ function persistLocal() {
   localStorage.setItem(SK, JSON.stringify({
     r2BaseUrl: cfg.r2BaseUrl, r2AccountId: cfg.r2AccountId,
     r2AccessKeyId: cfg.r2AccessKeyId, r2SecretKey: cfg.r2SecretKey, r2Bucket: cfg.r2Bucket,
-    r2WorkerUrl: cfg.r2WorkerUrl,
+    r2WorkerUrl: cfg.r2WorkerUrl, siteUrl: cfg.siteUrl,
     years: cfg.years, terms: cfg.terms, levels: cfg.levels,
     defaultYear: cfg.defaultYear, defaultTerm: cfg.defaultTerm, defaultLevel: cfg.defaultLevel,
     lessonTitles: cfg.lessonTitles
@@ -419,7 +426,7 @@ function persistLocal() {
 
 function settingsJson() {
   return JSON.stringify({
-    r2BaseUrl: cfg.r2BaseUrl, r2WorkerUrl: cfg.r2WorkerUrl,
+    r2BaseUrl: cfg.r2BaseUrl, r2WorkerUrl: cfg.r2WorkerUrl, siteUrl: cfg.siteUrl,
     years: cfg.years, terms: cfg.terms, levels: cfg.levels,
     defaultYear: cfg.defaultYear, defaultTerm: cfg.defaultTerm, defaultLevel: cfg.defaultLevel,
     lessonTitles: cfg.lessonTitles
@@ -575,6 +582,7 @@ function loadR2Fields() {
   document.getElementById('r2SecretKey').value   = cfg.r2SecretKey  || '';
   document.getElementById('r2Bucket').value      = cfg.r2Bucket     || 'textaudio';
   document.getElementById('r2WorkerUrl').value   = cfg.r2WorkerUrl  || '';
+  document.getElementById('siteUrl').value       = cfg.siteUrl      || '';
 }
 document.getElementById('saveR2Btn').addEventListener('click', async () => {
   cfg.r2BaseUrl     = document.getElementById('r2BaseUrl').value.trim().replace(/\/$/, '');
@@ -583,6 +591,7 @@ document.getElementById('saveR2Btn').addEventListener('click', async () => {
   cfg.r2SecretKey   = document.getElementById('r2SecretKey').value.trim();
   cfg.r2Bucket      = document.getElementById('r2Bucket').value.trim() || 'textaudio';
   cfg.r2WorkerUrl   = document.getElementById('r2WorkerUrl').value.trim().replace(/\/$/, '');
+  cfg.siteUrl       = document.getElementById('siteUrl').value.trim().replace(/\/$/, '');
   persistLocal(); // Save credentials to localStorage — only called once here
 
   // Try to restore content settings from R2 (update cfg in memory only; no second persistLocal)
@@ -600,9 +609,11 @@ document.getElementById('saveR2Btn').addEventListener('click', async () => {
       if (j.defaultTerm)  cfg.defaultTerm  = j.defaultTerm;
       if (j.defaultLevel) cfg.defaultLevel = j.defaultLevel;
       if (j.lessonTitles && Object.keys(j.lessonTitles).length) cfg.lessonTitles = j.lessonTitles;
+      if (j.siteUrl) cfg.siteUrl = j.siteUrl;
       break;
     } catch {}
   }
+  loadR2Fields();
   renderYearList(); renderTermList(); renderLevelList();
   toast(loaded
     ? 'R2設定を保存し、コンテンツ設定をR2から復元しました'
@@ -916,7 +927,10 @@ function allRows() {
   return rows;
 }
 function audioUrl(y, t, l, n) { return `${cfg.r2BaseUrl}/${y.tag}/${t.tag}/${l.tag}/lesson${n}.mp3`; }
-function qrUrl(y, t, l, n)    { return `${BASE_URL}/?year=${y.tag}&term=${t.tag}&level=${l.tag}&lesson=${n}`; }
+function qrUrl(y, t, l, n) {
+  const base = (cfg.siteUrl || BASE_URL).replace(/\/$/, '');
+  return `${base}/?year=${y.tag}&term=${t.tag}&level=${l.tag}&lesson=${n}`;
+}
 
 const CL_FK = 'dke_cl_filter';
 function saveClFilter() {
