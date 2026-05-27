@@ -247,8 +247,11 @@ function populateFilters() {
   tSel.innerHTML = cfg.terms.map(t => `<option value="${t.id}">${t.name}</option>`).join('');
   lSel.innerHTML = cfg.levels.map(l => `<option value="${l.id}">${l.name}</option>`).join('');
   if (yv) ySel.value = yv;
+  else if (cfg.defaultYear) ySel.value = cfg.defaultYear;
   if (tv) tSel.value = tv;
+  else if (cfg.defaultTerm) tSel.value = cfg.defaultTerm;
   if (lv) lSel.value = lv;
+  else if (cfg.defaultLevel) lSel.value = cfg.defaultLevel;
 }
 
 function toggleDone(yId, tId, lId, n) {

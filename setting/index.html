@@ -315,7 +315,9 @@ const DEFAULTS = {
 
 let cfg = {
   r2BaseUrl: '', r2AccountId: '', r2AccessKeyId: '', r2SecretKey: '', r2Bucket: 'textaudio',
-  years: [], terms: [], levels: []
+  r2WorkerUrl: '',
+  years: [], terms: [], levels: [],
+  defaultYear: '', defaultTerm: '', defaultLevel: ''
 };
 
 /* ── Toast ── */
@@ -363,7 +365,10 @@ async function loadAllSettings() {
         cfg.years  = j.years  || [...DEFAULTS.years];
         cfg.terms  = j.terms  || [...DEFAULTS.terms];
         cfg.levels = j.levels || [...DEFAULTS.levels];
-        if (j.r2BaseUrl) cfg.r2BaseUrl = j.r2BaseUrl;
+        if (j.r2BaseUrl)    cfg.r2BaseUrl    = j.r2BaseUrl;
+        if (j.defaultYear)  cfg.defaultYear  = j.defaultYear;
+        if (j.defaultTerm)  cfg.defaultTerm  = j.defaultTerm;
+        if (j.defaultLevel) cfg.defaultLevel = j.defaultLevel;
         return;
       }
     } catch {}
@@ -371,6 +376,9 @@ async function loadAllSettings() {
   cfg.years  = (local?.years  && local.years.length)  ? local.years  : [...DEFAULTS.years];
   cfg.terms  = (local?.terms  && local.terms.length)  ? local.terms  : [...DEFAULTS.terms];
   cfg.levels = (local?.levels && local.levels.length) ? local.levels : [...DEFAULTS.levels];
+  cfg.defaultYear  = local?.defaultYear  || '';
+  cfg.defaultTerm  = local?.defaultTerm  || '';
+  cfg.defaultLevel = local?.defaultLevel || '';
 }
 
 function persistLocal() {
@@ -378,7 +386,8 @@ function persistLocal() {
     r2BaseUrl: cfg.r2BaseUrl, r2AccountId: cfg.r2AccountId,
     r2AccessKeyId: cfg.r2AccessKeyId, r2SecretKey: cfg.r2SecretKey, r2Bucket: cfg.r2Bucket,
     r2WorkerUrl: cfg.r2WorkerUrl,
-    years: cfg.years, terms: cfg.terms, levels: cfg.levels
+    years: cfg.years, terms: cfg.terms, levels: cfg.levels,
+    defaultYear: cfg.defaultYear, defaultTerm: cfg.defaultTerm, defaultLevel: cfg.defaultLevel
   }));
 }
 
@@ -392,15 +401,23 @@ function makeCrudItem(fields, actions) {
   return div;
 }
 
+function setDefault(arr, id) {
+  if (arr === 'years')  { cfg.defaultYear  = id; renderYearList(); }
+  if (arr === 'terms')  { cfg.defaultTerm  = id; renderTermList(); }
+  if (arr === 'levels') { cfg.defaultLevel = id; renderLevelList(); }
+}
+
 /* ── Year CRUD ── */
 function renderYearList() {
   const el = document.getElementById('yearList');
   el.innerHTML = '';
   cfg.years.forEach((y, i) => {
+    const isDef = cfg.defaultYear === y.id || (!cfg.defaultYear && i === 0);
     const div = makeCrudItem(
       `<div class="crud-field wide"><label>表示名</label><input type="text" value="${esc(y.name)}" data-field="name" data-arr="years" data-idx="${i}"></div>
        <div class="crud-field wide"><label>タグ（英字）</label><input type="text" value="${esc(y.tag)}" data-field="tag" data-arr="years" data-idx="${i}"></div>`,
-      `<button class="btn btn-ghost" style="height:32px;padding:0 10px;font-size:.75rem;" onclick="moveArr('years',${i},-1,renderYearList)" ${i===0?'disabled':''}>↑</button>
+      `<button class="btn ${isDef?'btn-navy':'btn-ghost'}" style="height:32px;padding:0 10px;font-size:.75rem;" onclick="setDefault('years','${y.id}')">${isDef?'★ デフォルト':'デフォルト'}</button>
+       <button class="btn btn-ghost" style="height:32px;padding:0 10px;font-size:.75rem;" onclick="moveArr('years',${i},-1,renderYearList)" ${i===0?'disabled':''}>↑</button>
        <button class="btn btn-ghost" style="height:32px;padding:0 10px;font-size:.75rem;" onclick="moveArr('years',${i},1,renderYearList)" ${i===cfg.years.length-1?'disabled':''}>↓</button>
        <button class="btn btn-red"   style="height:32px;padding:0 10px;font-size:.75rem;" onclick="delArr('years',${i},renderYearList)">削除</button>`
     );
@@ -418,11 +435,13 @@ function renderTermList() {
   const el = document.getElementById('termList');
   el.innerHTML = '';
   cfg.terms.forEach((t, i) => {
+    const isDef = cfg.defaultTerm === t.id || (!cfg.defaultTerm && i === 0);
     const div = makeCrudItem(
       `<div class="crud-field wide"><label>表示名</label><input type="text" value="${esc(t.name)}" data-field="name" data-arr="terms" data-idx="${i}"></div>
        <div class="crud-field wide"><label>タグ（英字）</label><input type="text" value="${esc(t.tag)}" data-field="tag" data-arr="terms" data-idx="${i}"></div>
        <div class="crud-field narrow"><label>講数</label><input type="number" min="1" value="${t.lessons}" data-field="lessons" data-arr="terms" data-idx="${i}"></div>`,
-      `<button class="btn btn-ghost" style="height:32px;padding:0 10px;font-size:.75rem;" onclick="moveArr('terms',${i},-1,renderTermList)" ${i===0?'disabled':''}>↑</button>
+      `<button class="btn ${isDef?'btn-navy':'btn-ghost'}" style="height:32px;padding:0 10px;font-size:.75rem;" onclick="setDefault('terms','${t.id}')">${isDef?'★ デフォルト':'デフォルト'}</button>
+       <button class="btn btn-ghost" style="height:32px;padding:0 10px;font-size:.75rem;" onclick="moveArr('terms',${i},-1,renderTermList)" ${i===0?'disabled':''}>↑</button>
        <button class="btn btn-ghost" style="height:32px;padding:0 10px;font-size:.75rem;" onclick="moveArr('terms',${i},1,renderTermList)" ${i===cfg.terms.length-1?'disabled':''}>↓</button>
        <button class="btn btn-red"   style="height:32px;padding:0 10px;font-size:.75rem;" onclick="delArr('terms',${i},renderTermList)">削除</button>`
     );
@@ -440,10 +459,12 @@ function renderLevelList() {
   const el = document.getElementById('levelList');
   el.innerHTML = '';
   cfg.levels.forEach((l, i) => {
+    const isDef = cfg.defaultLevel === l.id || (!cfg.defaultLevel && i === 0);
     const div = makeCrudItem(
       `<div class="crud-field wide"><label>表示名</label><input type="text" value="${esc(l.name)}" data-field="name" data-arr="levels" data-idx="${i}"></div>
        <div class="crud-field wide"><label>タグ（英字）</label><input type="text" value="${esc(l.tag)}" data-field="tag" data-arr="levels" data-idx="${i}"></div>`,
-      `<button class="btn btn-ghost" style="height:32px;padding:0 10px;font-size:.75rem;" onclick="moveArr('levels',${i},-1,renderLevelList)" ${i===0?'disabled':''}>↑</button>
+      `<button class="btn ${isDef?'btn-navy':'btn-ghost'}" style="height:32px;padding:0 10px;font-size:.75rem;" onclick="setDefault('levels','${l.id}')">${isDef?'★ デフォルト':'デフォルト'}</button>
+       <button class="btn btn-ghost" style="height:32px;padding:0 10px;font-size:.75rem;" onclick="moveArr('levels',${i},-1,renderLevelList)" ${i===0?'disabled':''}>↑</button>
        <button class="btn btn-ghost" style="height:32px;padding:0 10px;font-size:.75rem;" onclick="moveArr('levels',${i},1,renderLevelList)" ${i===cfg.levels.length-1?'disabled':''}>↓</button>
        <button class="btn btn-red"   style="height:32px;padding:0 10px;font-size:.75rem;" onclick="delArr('levels',${i},renderLevelList)">削除</button>`
     );
@@ -480,7 +501,7 @@ document.getElementById('saveContentBtn').addEventListener('click', async () => 
   if (errs.length) { toast(errs[0], 'err'); return; }
 
   persistLocal();
-  const json = JSON.stringify({ r2BaseUrl: cfg.r2BaseUrl, years: cfg.years, terms: cfg.terms, levels: cfg.levels }, null, 2);
+  const json = JSON.stringify({ r2BaseUrl: cfg.r2BaseUrl, years: cfg.years, terms: cfg.terms, levels: cfg.levels, defaultYear: cfg.defaultYear, defaultTerm: cfg.defaultTerm, defaultLevel: cfg.defaultLevel }, null, 2);
 
   if (cfg.r2WorkerUrl || (cfg.r2AccountId && cfg.r2AccessKeyId && cfg.r2SecretKey && cfg.r2Bucket)) {
     try {
