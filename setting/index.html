@@ -560,8 +560,12 @@ fileDrop.addEventListener('dragleave', () => fileDrop.classList.remove('drag-ove
 fileDrop.addEventListener('drop', e => { e.preventDefault(); fileDrop.classList.remove('drag-over'); handleFiles(e.dataTransfer.files); });
 fileInput.addEventListener('change', e => handleFiles(e.target.files));
 
-function handleFiles(fileList) {
-  selectedFiles = Array.from(fileList).sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+async function handleFiles(fileList) {
+  const sorted = Array.from(fileList).sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+  selectedFiles = await Promise.all(sorted.map(async f => ({
+    name: f.name,
+    data: new Uint8Array(await f.arrayBuffer())
+  })));
   lessonNums = selectedFiles.map((f, i) => guessLessonNum(f.name, i + 1));
   renderPreview();
 }
@@ -623,7 +627,7 @@ document.getElementById('uploadBtn').addEventListener('click', async () => {
     const url  = `https://${cfg.r2AccountId}.r2.cloudflarestorage.com/${cfg.r2Bucket}/${key}`;
     txt.textContent = `${i+1} / ${selectedFiles.length} — ${esc(file.name)}`;
     try {
-      const res = await signedPut(url, file, 'audio/mpeg');
+      const res = await signedPut(url, file.data, 'audio/mpeg');
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       ok++;
     } catch (e) { fail++; toast(`${file.name}: ${e.message}`, 'err'); }
@@ -658,7 +662,8 @@ async function signedPut(url, body, contentType) {
   const region = 'auto', service = 's3';
   const u = new URL(url);
   let bodyBytes;
-  if (body instanceof File || body instanceof Blob) bodyBytes = new Uint8Array(await body.arrayBuffer());
+  if (body instanceof Uint8Array) bodyBytes = body;
+  else if (body instanceof File || body instanceof Blob) bodyBytes = new Uint8Array(await body.arrayBuffer());
   else bodyBytes = new TextEncoder().encode(body);
   const payHash = await sha256hex(bodyBytes);
   const canonHeaders = `content-type:${contentType}\nhost:${u.hostname}\nx-amz-content-sha256:${payHash}\nx-amz-date:${amz}\n`;
