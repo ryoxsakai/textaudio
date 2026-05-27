@@ -531,29 +531,22 @@ document.getElementById('testUploadApiBtn').addEventListener('click', async () =
   const btn = document.getElementById('testUploadApiBtn');
   btn.disabled = true; btn.textContent = '確認中…';
 
-  // Step 1: GET test (no preflight needed)
-  let getOk = false;
-  try {
-    const r = await fetch(`https://${cfg.r2AccountId}.r2.cloudflarestorage.com/${cfg.r2Bucket}/settings.json`, { mode: 'cors' });
-    getOk = true;
-  } catch (_) {}
-
-  // Step 2: PUT test (preflight required — proves CORS allows PUT)
+  // Test with exact same headers as the actual signed upload (Authorization etc.)
   try {
     const r = await fetch(url, {
       method: 'PUT',
       mode: 'cors',
-      headers: { 'Content-Type': 'application/octet-stream' },
+      headers: {
+        'Content-Type': 'audio/mpeg',
+        'x-amz-date': '20240101T000000Z',
+        'x-amz-content-sha256': 'e3b0c44298fc1c149afbf4c8996fb924',
+        'Authorization': 'AWS4-HMAC-SHA256 Credential=test/20240101/auto/s3/aws4_request, SignedHeaders=content-type;host;x-amz-content-sha256;x-amz-date, Signature=0000'
+      },
       body: new Uint8Array(0)
     });
-    // Any HTTP response means CORS preflight succeeded
-    toast(`PUT CORS OK（HTTP ${r.status}）— アップロード可能な状態です`);
+    toast(`署名ヘッダーCORS OK（HTTP ${r.status}）— アップロード可能な状態です`);
   } catch (e) {
-    if (getOk) {
-      toast('GET はOKですがPUT CORSが失敗 — R2のCORSにPUTを追加してください', 'err');
-    } else {
-      toast('到達失敗 — Account IDが間違っているか、CORSが未設定です', 'err');
-    }
+    toast('署名ヘッダーのCORS失敗 — R2のCORSにAuthorizationヘッダーを追加してください', 'err');
   } finally {
     btn.disabled = false; btn.textContent = '接続テスト';
   }
