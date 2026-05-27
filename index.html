@@ -181,18 +181,21 @@ async function loadCfg() {
       const r = await fetch(`${url}/settings.json`);
       if (r.ok) {
         const j = await r.json();
-        cfg = j;
-        if (!cfg.years) cfg.years = [...DEFAULTS.years];
-        if (!cfg.lessonTitles) cfg.lessonTitles = {};
-        // Merge: R2 content overrides local, but keep credentials from local
-        localStorage.setItem(SK, JSON.stringify(Object.assign({}, local || {}, j)));
+        // R2 takes priority only for non-empty arrays; fall back to localStorage
+        cfg = Object.assign({}, j);
+        cfg.years  = j.years?.length  ? j.years  : (local?.years?.length  ? local.years  : [...DEFAULTS.years]);
+        cfg.terms  = j.terms?.length  ? j.terms  : (local?.terms?.length  ? local.terms  : [...DEFAULTS.terms]);
+        cfg.levels = j.levels?.length ? j.levels : (local?.levels?.length ? local.levels : [...DEFAULTS.levels]);
+        if (!cfg.lessonTitles) cfg.lessonTitles = local?.lessonTitles || {};
+        // Save merged state (R2 content + local credentials) to localStorage
+        localStorage.setItem(SK, JSON.stringify(Object.assign({}, local || {}, cfg)));
         return;
       }
     } catch {}
   }
-  if (local && local.terms && local.levels) {
+  if (local?.terms?.length && local?.levels?.length) {
     cfg = local;
-    if (!cfg.years) cfg.years = [...DEFAULTS.years];
+    if (!cfg.years?.length) cfg.years = [...DEFAULTS.years];
     if (!cfg.lessonTitles) cfg.lessonTitles = {};
     return;
   }

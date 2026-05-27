@@ -367,22 +367,25 @@ async function loadAllSettings() {
       const r = await fetch(`${url}/settings.json`);
       if (r.ok) {
         const j = await r.json();
-        cfg.years  = j.years  || [...DEFAULTS.years];
-        cfg.terms  = j.terms  || [...DEFAULTS.terms];
-        cfg.levels = j.levels || [...DEFAULTS.levels];
-        if (j.r2BaseUrl)   cfg.r2BaseUrl   = j.r2BaseUrl;
-        if (j.r2WorkerUrl) cfg.r2WorkerUrl = j.r2WorkerUrl;
-        if (j.defaultYear)  cfg.defaultYear  = j.defaultYear;
-        if (j.defaultTerm)  cfg.defaultTerm  = j.defaultTerm;
-        if (j.defaultLevel) cfg.defaultLevel = j.defaultLevel;
-        if (j.lessonTitles) cfg.lessonTitles = j.lessonTitles;
+        // R2 data takes priority only when non-empty; fall back to localStorage for empty arrays
+        cfg.years  = j.years?.length  ? j.years  : (local?.years?.length  ? local.years  : [...DEFAULTS.years]);
+        cfg.terms  = j.terms?.length  ? j.terms  : (local?.terms?.length  ? local.terms  : [...DEFAULTS.terms]);
+        cfg.levels = j.levels?.length ? j.levels : (local?.levels?.length ? local.levels : [...DEFAULTS.levels]);
+        if (j.r2BaseUrl)    cfg.r2BaseUrl    = j.r2BaseUrl;
+        if (j.r2WorkerUrl)  cfg.r2WorkerUrl  = j.r2WorkerUrl;
+        cfg.defaultYear  = j.defaultYear  || local?.defaultYear  || '';
+        cfg.defaultTerm  = j.defaultTerm  || local?.defaultTerm  || '';
+        cfg.defaultLevel = j.defaultLevel || local?.defaultLevel || '';
+        cfg.lessonTitles = j.lessonTitles || local?.lessonTitles || {};
+        persistLocal(); // sync merged state back to localStorage
         return;
       }
     } catch {}
   }
-  cfg.years        = (local?.years  && local.years.length)  ? local.years  : [...DEFAULTS.years];
-  cfg.terms        = (local?.terms  && local.terms.length)  ? local.terms  : [...DEFAULTS.terms];
-  cfg.levels       = (local?.levels && local.levels.length) ? local.levels : [...DEFAULTS.levels];
+  // R2 unavailable — use localStorage, fall back to DEFAULTS
+  cfg.years        = local?.years?.length  ? local.years  : [...DEFAULTS.years];
+  cfg.terms        = local?.terms?.length  ? local.terms  : [...DEFAULTS.terms];
+  cfg.levels       = local?.levels?.length ? local.levels : [...DEFAULTS.levels];
   cfg.defaultYear  = local?.defaultYear  || '';
   cfg.defaultTerm  = local?.defaultTerm  || '';
   cfg.defaultLevel = local?.defaultLevel || '';
