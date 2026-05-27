@@ -220,12 +220,22 @@ function render() {
     h += `<tr class="${d ? 'done-row' : ''}">
       <td>第${r.n}講</td>
       <td class="ops">
-        <button class="btn btn-play" onclick="openPlayer('${r.y.id}','${r.t.id}','${r.l.id}',${r.n})">▶ 再生</button>
+        <button class="btn btn-play" id="play-${r.key}" style="opacity:.35;" disabled onclick="openPlayer('${r.y.id}','${r.t.id}','${r.l.id}',${r.n})">▶ 再生</button>
         <button class="btn btn-done ${d ? 'is-done' : ''}" onclick="toggleDone('${r.y.id}','${r.t.id}','${r.l.id}',${r.n})">${d ? '✓ 完了' : '完了'}</button>
       </td>
     </tr>`;
   }
   con.innerHTML = h + '</tbody></table>';
+  if (cfg.r2BaseUrl) {
+    rows.forEach(r => {
+      fetch(audioUrl(r.y, r.t, r.l, r.n), { method: 'HEAD' }).then(res => {
+        if (res.ok) {
+          const btn = document.getElementById(`play-${r.key}`);
+          if (btn) { btn.disabled = false; btn.style.opacity = ''; }
+        }
+      }).catch(() => {});
+    });
+  }
 }
 
 function populateFilters() {

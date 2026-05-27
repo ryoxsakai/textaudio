@@ -853,11 +853,21 @@ function renderContentList() {
   let h = '<table class="cl"><thead><tr><th>講</th><th>操作</th></tr></thead><tbody>';
   for (const r of rows) {
     h += `<tr><td>第${r.n}講</td><td class="ops">
-      <button class="btn btn-navy" style="font-size:.75rem;height:32px;" onclick="openPlayer('${r.y.id}','${r.t.id}','${r.l.id}',${r.n})">▶ 再生</button>
+      <button class="btn btn-navy" id="clplay-${r.key}" style="font-size:.75rem;height:32px;opacity:.35;" disabled onclick="openPlayer('${r.y.id}','${r.t.id}','${r.l.id}',${r.n})">▶ 再生</button>
       <button class="btn btn-ghost" style="font-size:.75rem;height:32px;" onclick="openQr('${r.y.id}','${r.t.id}','${r.l.id}',${r.n})">QR</button>
     </td></tr>`;
   }
   con.innerHTML = h + '</tbody></table>';
+  if (cfg.r2BaseUrl) {
+    rows.forEach(r => {
+      fetch(audioUrl(r.y, r.t, r.l, r.n), { method: 'HEAD' }).then(res => {
+        if (res.ok) {
+          const btn = document.getElementById(`clplay-${r.key}`);
+          if (btn) { btn.disabled = false; btn.style.opacity = ''; }
+        }
+      }).catch(() => {});
+    });
+  }
 }
 
 /* ── Player ── */
