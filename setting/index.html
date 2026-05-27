@@ -541,7 +541,6 @@ document.getElementById('testUploadApiBtn').addEventListener('click', async () =
   const btn = document.getElementById('testUploadApiBtn');
   btn.disabled = true; btn.textContent = '確認中…';
 
-  // Test with exact same headers as the actual signed upload (Authorization etc.)
   try {
     const r = await fetch(url, {
       method: 'PUT',
@@ -554,9 +553,10 @@ document.getElementById('testUploadApiBtn').addEventListener('click', async () =
       },
       body: new Uint8Array(0)
     });
-    toast(`署名ヘッダーCORS OK（HTTP ${r.status}）— アップロード可能な状態です`);
+    toast(`CORS OK（HTTP ${r.status}）— アップロード可能な状態です`);
   } catch (e) {
-    toast('署名ヘッダーのCORS失敗 — R2のCORSにAuthorizationヘッダーを追加してください', 'err');
+    console.error('CORS test failed:', e, 'URL:', url, 'Origin:', location.origin);
+    alert(`接続テスト失敗\n\nURL: ${url}\nOrigin: ${location.origin}\nError: ${e.message}\n\nブラウザの開発ツール（Console）でも詳細を確認してください。`);
   } finally {
     btn.disabled = false; btn.textContent = '接続テスト';
   }
