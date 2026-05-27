@@ -641,9 +641,16 @@ document.getElementById('uploadBtn').addEventListener('click', async () => {
     txt.textContent = `${i+1} / ${selectedFiles.length} — ${esc(file.name)}`;
     try {
       const res = await signedPut(url, file.data, 'audio/mpeg');
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      if (!res.ok) {
+        const body = await res.text().catch(() => '');
+        throw new Error(`HTTP ${res.status} ${body.slice(0, 200)}`);
+      }
       ok++;
-    } catch (e) { fail++; toast(`${file.name}: ${e.message}`, 'err'); }
+    } catch (e) {
+      fail++;
+      console.error('Upload error:', e, 'URL:', url);
+      toast(`${file.name}: ${e.message}`, 'err');
+    }
     bar.style.width = ((i+1) / selectedFiles.length * 100) + '%';
   }
   txt.textContent = `完了: ${ok} 件${fail ? ' / 失敗: '+fail+' 件' : ''}`;
@@ -674,11 +681,11 @@ async function signedPut(url, body, contentType) {
   const amz = `${ds}T${pad(now.getUTCHours())}${pad(now.getUTCMinutes())}${pad(now.getUTCSeconds())}Z`;
   const region = 'auto', service = 's3';
   const u = new URL(url);
-  let bodyBytes;
-  if (body instanceof Uint8Array) bodyBytes = body;
-  else if (body instanceof File || body instanceof Blob) bodyBytes = new Uint8Array(await body.arrayBuffer());
-  else bodyBytes = new TextEncoder().encode(body);
-  const payHash = await sha256hex(bodyBytes);
+  let bodyBlob;
+  if (body instanceof Blob) bodyBlob = body;
+  else if (body instanceof Uint8Array) bodyBlob = new Blob([body], { type: contentType });
+  else bodyBlob = new Blob([new TextEncoder().encode(body)], { type: contentType });
+  const payHash = 'UNSIGNED-PAYLOAD';
   const canonHeaders = `content-type:${contentType}\nhost:${u.hostname}\nx-amz-content-sha256:${payHash}\nx-amz-date:${amz}\n`;
   const signedHdrs   = 'content-type;host;x-amz-content-sha256;x-amz-date';
   const canonReq     = `PUT\n${u.pathname}\n\n${canonHeaders}\n${signedHdrs}\n${payHash}`;
@@ -691,11 +698,12 @@ async function signedPut(url, body, contentType) {
   const sig   = await hmacHex(kSign, sts);
   return fetch(url, {
     method: 'PUT',
+    mode: 'cors',
     headers: {
       'Authorization': `AWS4-HMAC-SHA256 Credential=${cfg.r2AccessKeyId}/${credScope}, SignedHeaders=${signedHdrs}, Signature=${sig}`,
       'x-amz-date': amz, 'x-amz-content-sha256': payHash, 'Content-Type': contentType
     },
-    body: bodyBytes
+    body: bodyBlob
   });
 }
 
