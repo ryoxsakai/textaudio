@@ -220,8 +220,8 @@ function audioUrlWorker(y, t, l, n) {
 }
 
 function updateBadge() {
-  const rows = allRows();
-  document.getElementById('completionBadge').textContent = `完了: ${rows.filter(r => done[r.key]).length} / ${rows.length}`;
+  const count = allRows().filter(r => done[r.key]).length;
+  document.getElementById('completionBadge').textContent = `完了: ${count}`;
 }
 
 function render() {
@@ -241,9 +241,6 @@ function render() {
       <td style="font-size:.82rem;color:var(--muted);">${lt ? esc(lt) : '<span style="color:var(--border)">—</span>'}</td>
       <td class="ops">
         <button class="icon-btn play-btn" id="play-${r.key}" disabled onclick="openPlayer('${r.y.id}','${r.t.id}','${r.l.id}',${r.n})" title="再生"><i class="fas fa-play"></i></button>
-        <button class="icon-btn done-btn ${d ? 'is-done' : ''}" onclick="toggleDone('${r.y.id}','${r.t.id}','${r.l.id}',${r.n})" title="${d ? '完了を取り消す' : '完了にする'}">
-          ${d ? '<i class="fas fa-circle-check"></i>' : '<i class="far fa-circle"></i>'}
-        </button>
       </td>
     </tr>`;
   }
