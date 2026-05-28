@@ -395,7 +395,9 @@ function handleParams() {
   const t = cfg.terms.find(x => x.tag === tTag);
   const l = cfg.levels.find(x => x.tag === lTag);
   if (!y || !t || !l || n < 1 || n > t.lessons) return;
-  openPlayer(y.id, t.id, l.id, n);
+  fetch(audioUrl(y, t, l, n), { method: 'HEAD' })
+    .then(res => { if (res.ok) openPlayer(y.id, t.id, l.id, n); })
+    .catch(() => {});
 }
 
 async function init() {
