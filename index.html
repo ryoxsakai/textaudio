@@ -104,6 +104,7 @@
 </script>
 
 <div class="filter-bar">
+  <span style="color:var(--muted);display:flex;align-items:center;font-size:.85rem;flex-shrink:0;"><i class="fas fa-filter"></i></span>
   <select id="filterYear"></select>
   <select id="filterTerm"></select>
   <select id="filterLevel"></select>
@@ -221,7 +222,7 @@ function audioUrlWorker(y, t, l, n) {
 
 function updateBadge() {
   const count = allRows().filter(r => done[r.key]).length;
-  document.getElementById('completionBadge').textContent = `完了: ${count}`;
+  document.getElementById('completionBadge').innerHTML = `<i class="fas fa-circle-check"></i> 完了: ${count}`;
 }
 
 function render() {
@@ -232,7 +233,7 @@ function render() {
   updateBadge();
   const con = document.getElementById('tableContainer');
   if (!rows.length) { con.innerHTML = '<div class="msg-c">該当するコンテンツがありません</div>'; return; }
-  let h = '<table><thead><tr><th>講</th><th>タイトル</th><th></th></tr></thead><tbody>';
+  let h = '<table><thead><tr><th><i class="fas fa-headphones fa-fw"></i> 講</th><th><i class="fas fa-tag fa-fw"></i> タイトル</th><th></th></tr></thead><tbody>';
   for (const r of rows) {
     const d = !!done[r.key];
     const lt = cfg.lessonTitles?.[r.key] || '';
