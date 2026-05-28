@@ -12,18 +12,19 @@
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
-      --primary: #4A86C8; --primary-dk: #3570B0; --primary-lt: #EAF3FC;
-      --green: #4CAF82;   --red: #DC7070;
-      --border: #C5DEF5; --bg: #F2F8FE; --text: #2A3F55; --muted: #7A93A8;
+      --primary: #5B8DEF; --primary-dk: #3F73D6; --primary-lt: #EAF1FE;
+      --grad: linear-gradient(135deg, #5B8DEF 0%, #8B7FE8 100%);
+      --green: #3FB984;   --red: #E07A7A;
+      --border: #DCE6F4; --bg: #F3F7FC; --text: #28324A; --muted: #95A3BA;
     }
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino Sans", sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; -webkit-font-smoothing: antialiased; }
     .lt-input { background: var(--primary-lt) !important; border-color: var(--border) !important; color: var(--text) !important; }
 
-    .app-header { background: var(--primary); color: #fff; padding: 0 16px; height: 56px; display: flex; align-items: center; gap: 12px; position: sticky; top: 0; z-index: 10; box-shadow: 0 2px 12px rgba(74,134,200,.25); }
-    .app-header a { color: rgba(255,255,255,.8); text-decoration: none; font-size: 1.2rem; }
-    .app-title { font-size: 1rem; font-weight: 700; }
+    .app-header { background: linear-gradient(125deg, #5B8DEF 0%, #7C84EC 52%, #A98CE2 100%); color: #fff; padding: 0 18px; height: 60px; display: flex; align-items: center; gap: 12px; position: sticky; top: 0; z-index: 10; box-shadow: 0 4px 18px rgba(91,141,239,.28); }
+    .app-header a { color: rgba(255,255,255,.85); text-decoration: none; font-size: 1.2rem; }
+    .app-title { font-size: 1.05rem; font-weight: 700; }
 
-    .tab-nav { display: flex; background: #fff; border-bottom: 2px solid var(--border); overflow-x: auto; scrollbar-width: none; position: sticky; top: 56px; z-index: 9; touch-action: pan-x; overscroll-behavior-x: contain; }
+    .tab-nav { display: flex; background: #fff; border-bottom: 2px solid var(--border); overflow-x: auto; scrollbar-width: none; position: sticky; top: 60px; z-index: 9; touch-action: pan-x; overscroll-behavior-x: contain; }
     .tab-nav::-webkit-scrollbar { display: none; }
     .tab-btn { flex-shrink: 0; padding: 14px 16px; font-size: .82rem; font-weight: 600; color: var(--muted); border: none; background: none; cursor: pointer; border-bottom: 3px solid transparent; margin-bottom: -2px; white-space: nowrap; -webkit-tap-highlight-color: transparent; }
     .tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); }
@@ -34,7 +35,7 @@
     .sec-gap { margin-bottom: 28px; }
 
     .crud-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
-    .crud-item { background: #fff; border: 1px solid var(--border); border-radius: 10px; padding: 12px; }
+    .crud-item { background: #fff; border: 1px solid var(--border); border-radius: 14px; padding: 13px; box-shadow: 0 2px 10px rgba(80,120,200,.06); }
     .crud-fields { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
     .crud-field { display: flex; flex-direction: column; gap: 3px; }
     .crud-field.wide { flex: 1; min-width: 100px; }
@@ -45,10 +46,10 @@
 
     .btn { display: inline-flex; align-items: center; justify-content: center; border: none; border-radius: 8px; cursor: pointer; font-size: .82rem; font-weight: 600; height: 36px; padding: 0 14px; min-width: 44px; -webkit-tap-highlight-color: transparent; transition: opacity .15s; white-space: nowrap; }
     .btn:active { opacity: .7; }
-    .btn-navy  { background: var(--primary); color: #fff; }
-    .btn-ghost { background: var(--primary-lt); color: var(--muted); }
-    .btn-red   { background: #FDEAEA; color: var(--red); }
-    .btn-add   { background: var(--primary-lt); color: var(--primary); border: 1.5px dashed var(--primary); width: 100%; height: 40px; border-radius: 10px; }
+    .btn-navy  { background: var(--grad); color: #fff; box-shadow: 0 3px 12px rgba(91,141,239,.28); }
+    .btn-ghost { background: var(--primary-lt); color: var(--primary); }
+    .btn-red   { background: #FCEAEA; color: var(--red); }
+    .btn-add   { background: var(--primary-lt); color: var(--primary); border: 1.5px dashed var(--primary); width: 100%; height: 42px; border-radius: 12px; }
 
     .form-row { display: flex; flex-direction: column; gap: 4px; margin-bottom: 14px; }
     .form-label { font-size: .8rem; font-weight: 600; color: var(--text); }
@@ -106,14 +107,14 @@
     .btn-close { width: 30px; height: 30px; border: none; background: var(--primary-lt); border-radius: 50%; font-size: .82rem; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: var(--primary); }
     .prog-wrap { position: relative; height: 44px; display: flex; align-items: center; cursor: pointer; touch-action: none; user-select: none; }
     .prog-track { position: absolute; left: 0; right: 0; height: 6px; background: #e2e6ea; border-radius: 3px; overflow: hidden; }
-    .prog-fill { height: 100%; width: 0; background: var(--primary); border-radius: 3px; }
+    .prog-fill { height: 100%; width: 0; background: var(--grad); border-radius: 3px; }
     .prog-thumb { position: absolute; width: 18px; height: 18px; background: var(--primary); border-radius: 50%; top: 50%; left: 0; transform: translate(-50%,-50%); box-shadow: 0 1px 4px rgba(74,134,200,.4); }
     .time-row { display: flex; justify-content: space-between; font-size: .75rem; color: var(--muted); margin-bottom: 16px; }
     .ctrl-row { display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 16px; }
     .ctrl-btn { display: flex; align-items: center; justify-content: center; border: none; background: none; border-radius: 50%; min-width: 46px; min-height: 46px; cursor: pointer; color: var(--primary); font-size: 1.3rem; -webkit-tap-highlight-color: transparent; transition: background .15s; }
     .ctrl-btn:active { background: var(--primary-lt); }
-    .ctrl-btn-main { background: var(--primary); color: #fff; min-width: 62px; min-height: 62px; font-size: 1.45rem; box-shadow: 0 4px 18px rgba(74,134,200,.35); }
-    .ctrl-btn-main:active { background: var(--primary-dk); }
+    .ctrl-btn-main { background: var(--grad); color: #fff; min-width: 64px; min-height: 64px; font-size: 1.5rem; box-shadow: 0 6px 20px rgba(91,141,239,.38); }
+    .ctrl-btn-main:active { opacity: .92; }
     .btn-preset { border: 1.5px solid var(--border); background: #fff; color: var(--muted); font-size: .77rem; font-weight: 600; padding: 6px 10px; border-radius: 20px; cursor: pointer; min-height: 34px; -webkit-tap-highlight-color: transparent; transition: all .15s; }
     .btn-preset.active { border-color: var(--primary); background: var(--primary); color: #fff; }
     .btn-preset:active { opacity: .7; }
@@ -132,7 +133,6 @@
 <header class="app-header">
   <a href="../"><i class="fas fa-arrow-left"></i></a>
   <span class="app-title"><i class="fas fa-gear"></i> 設定</span>
-  <span id="versionBadge" style="margin-left:auto;font-size:.7rem;opacity:.6;font-weight:400;">v2026-05-28a</span>
 </header>
 
 <nav class="tab-nav">
@@ -217,13 +217,7 @@
     <select id="upTerm"><option value="">学期を選択</option></select>
     <select id="upLevel"><option value="">レベルを選択</option></select>
   </div>
-  <div style="background:#f8f9fb;border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-    <div style="flex:1;min-width:0;">
-      <div style="font-size:.7rem;color:var(--muted);margin-bottom:2px;">R2 APIエンドポイント</div>
-      <div id="r2ApiUrlDisplay" style="font-size:.75rem;font-family:monospace;color:var(--primary);word-break:break-all;">—</div>
-    </div>
-    <button class="btn btn-ghost" id="testUploadApiBtn" style="flex-shrink:0;height:36px;font-size:.78rem;"><i class="fas fa-plug fa-fw"></i> 接続テスト</button>
-  </div>
+
   <div class="file-drop" id="fileDrop">
     <div>タップまたはドラッグでMP3を選択</div>
     <div style="font-size:.75rem;margin-top:4px;">複数選択可・ファイル名の数字を講番号に自動反映</div>
@@ -273,7 +267,7 @@
       <button class="ctrl-btn ctrl-btn-main" id="btnPlay"><i class="fas fa-play" id="iconPlay"></i></button>
       <button class="ctrl-btn" id="btnFwd" title="10秒進む"><i class="fas fa-rotate-right"></i></button>
     </div>
-    <div class="speed-section" style="margin-bottom:4px;">
+    <div class="speed-section" style="margin-bottom:16px;">
       <div class="speed-label" style="font-size:.72rem;color:var(--muted);text-align:center;margin-bottom:8px;letter-spacing:.04em;">再生速度</div>
       <div class="speed-preset-row" style="display:flex;gap:6px;justify-content:center;">
         <button class="btn-preset" data-speed="0.75">0.75x</button>
@@ -282,6 +276,11 @@
         <button class="btn-preset" data-speed="1.5">1.5x</button>
         <button class="btn-preset" data-speed="2">2.0x</button>
       </div>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:0 4px;">
+      <button class="ctrl-btn" id="btnPrevLesson" style="min-width:40px;min-height:40px;font-size:1.1rem;" title="前の講" disabled><i class="fas fa-backward-step"></i></button>
+      <span id="navLabel" style="font-size:.76rem;color:var(--muted);font-weight:600;letter-spacing:.04em;"></span>
+      <button class="ctrl-btn" id="btnNextLesson" style="min-width:40px;min-height:40px;font-size:1.1rem;" title="次の講" disabled><i class="fas fa-forward-step"></i></button>
     </div>
   </div>
 </div>
@@ -401,13 +400,6 @@ async function loadAllSettings() {
   if (statusEl) {
     statusEl.textContent = `ロード済み: 年度${cfg.years.length}件 / 学期${cfg.terms.length}件 / レベル${cfg.levels.length}件`;
   }
-  console.log('[DKE] loadAllSettings done', {
-    years: cfg.years.length,
-    terms: cfg.terms.length,
-    levels: cfg.levels.length,
-    localStorage: !!localStorage.getItem(SK),
-    localData: localStorage.getItem(SK)
-  });
 }
 
 function persistLocal() {
@@ -568,11 +560,10 @@ document.getElementById('saveContentBtn').addEventListener('click', async () => 
   if (statusEl) statusEl.textContent = `保存済み: ${savedCount}`;
   try {
     await saveSettingsJson();
-    toast(`保存しました（LocalStorage + R2） [${savedCount}]`);
+    toast(`保存しました [${savedCount}]`);
   } catch (e) {
-    toast(e.message === 'R2未設定' ? `LocalStorageに保存しました（R2未設定）[${savedCount}]` : `LocalStorageに保存しました（R2失敗: ${e.message}）[${savedCount}]`, e.message === 'R2未設定' ? 'ok' : 'err');
+    toast(e.message === 'R2未設定' ? `保存しました [${savedCount}]` : `保存しました（R2エラー: ${e.message}）`, e.message === 'R2未設定' ? 'ok' : 'err');
   }
-  console.log('[DKE] saved to localStorage', JSON.parse(localStorage.getItem(SK)));
 });
 
 /* ── R2 settings ── */
@@ -619,11 +610,9 @@ document.getElementById('saveR2Btn').addEventListener('click', async () => {
   // Also upload settings.json to R2 now that we have credentials/URL
   try {
     await saveSettingsJson();
-    toast(loaded ? 'R2設定を保存し、コンテンツ設定をR2から復元・再保存しました' : 'R2設定を保存し、settings.jsonをR2にアップロードしました');
+    toast('R2設定を保存しました');
   } catch (e) {
-    toast(loaded
-      ? 'R2設定をLocalStorageに保存しました（R2への書き込み失敗: ' + e.message + '）'
-      : 'R2設定をLocalStorageに保存しました（R2未設定またはエラー）');
+    toast(e.message === 'R2未設定' ? 'R2設定を保存しました' : 'R2設定を保存しました（R2への書き込み失敗）', e.message === 'R2未設定' ? 'ok' : 'err');
   }
 });
 document.getElementById('testConnBtn').addEventListener('click', async () => {
@@ -631,7 +620,7 @@ document.getElementById('testConnBtn').addEventListener('click', async () => {
   if (!url) { toast('ベースURLを入力してください', 'err'); return; }
   try {
     const r = await fetch(`${url}/settings.json`);
-    toast(r.ok ? '接続成功（settings.json取得OK）' : `接続できました（HTTP ${r.status}）`);
+    toast(r.ok ? '接続テスト成功' : r.status === 404 ? '接続OK（settings.json未作成）' : `接続エラー（HTTP ${r.status}）`, r.ok || r.status === 404 ? 'ok' : 'err');
   } catch { toast('接続できませんでした', 'err'); }
 });
 
@@ -643,61 +632,8 @@ function populateUploadSelects() {
   yS.innerHTML = '<option value="">年度を選択</option>' + cfg.years.map(y => `<option value="${y.id}">${y.name}</option>`).join('');
   tS.innerHTML = '<option value="">学期を選択</option>' + cfg.terms.map(t => `<option value="${t.id}">${t.name}</option>`).join('');
   lS.innerHTML = '<option value="">レベルを選択</option>' + cfg.levels.map(l => `<option value="${l.id}">${l.name}</option>`).join('');
-  updateApiUrlDisplay();
 }
 
-function updateApiUrlDisplay() {
-  const el = document.getElementById('r2ApiUrlDisplay');
-  el.textContent = cfg.r2AccountId && cfg.r2Bucket
-    ? `https://${cfg.r2AccountId}.r2.cloudflarestorage.com/${cfg.r2Bucket}/`
-    : '（R2設定でAccount IDとバケット名を入力してください）';
-}
-
-document.getElementById('testUploadApiBtn').addEventListener('click', async () => {
-  if (!cfg.r2AccountId || !cfg.r2Bucket) {
-    toast('R2設定でAccount IDとバケット名を確認してください', 'err'); return;
-  }
-  // Unique URL per test to bypass browser preflight cache
-  const url = `https://${cfg.r2AccountId}.r2.cloudflarestorage.com/${cfg.r2Bucket}/_cors_test_${Date.now()}`;
-  const btn = document.getElementById('testUploadApiBtn');
-  btn.disabled = true; btn.textContent = '確認中…';
-
-  // Step 1: simple PUT (no Authorization) to isolate Authorization-specific issue
-  let simpleOk = false, simpleErr = '';
-  try {
-    const r = await fetch(url, {
-      method: 'PUT',
-      mode: 'cors',
-      headers: { 'Content-Type': 'audio/mpeg' },
-      body: new Uint8Array(0)
-    });
-    simpleOk = true; simpleErr = `HTTP ${r.status}`;
-  } catch (e) { simpleErr = e.message; }
-
-  // Step 2: PUT with all signed headers (this should match the real upload)
-  let authOk = false, authErr = '';
-  try {
-    const r = await fetch(url + '_auth', {
-      method: 'PUT',
-      mode: 'cors',
-      headers: {
-        'Content-Type': 'audio/mpeg',
-        'x-amz-date': '20240101T000000Z',
-        'x-amz-content-sha256': 'UNSIGNED-PAYLOAD',
-        'Authorization': 'AWS4-HMAC-SHA256 Credential=test/20240101/auto/s3/aws4_request, SignedHeaders=content-type;host;x-amz-content-sha256;x-amz-date, Signature=0000'
-      },
-      body: new Uint8Array(0)
-    });
-    authOk = true; authErr = `HTTP ${r.status}`;
-  } catch (e) { authErr = e.message; }
-
-  if (authOk) {
-    toast(`CORS OK（${authErr}）— アップロード可能な状態です`);
-  } else {
-    alert(`接続テスト結果\n\nバケット URL: ${url}\nOrigin: ${location.origin}\n\n[1] PUT (Content-Type のみ): ${simpleOk ? 'OK ' + simpleErr : '失敗 ' + simpleErr}\n[2] PUT (Authorization 含む): ${authOk ? 'OK ' + authErr : '失敗 ' + authErr}\n\n[2] のみ失敗する場合 → R2 CORS の AllowedHeaders に "authorization" が無いか、保存されていない可能性があります。\n[1] [2] 両方失敗する場合 → CORS そのものが未設定、または Origin が許可されていません。`);
-  }
-  btn.disabled = false; btn.textContent = '接続テスト';
-});
 
 let selectedFiles = [];
 let lessonNums = [];
@@ -978,6 +914,7 @@ function renderContentList() {
   const tF = document.getElementById('clTerm').value;
   const lF = document.getElementById('clLevel').value;
   const rows = allRows().filter(r => (!yF || r.y.id === yF) && (!tF || r.t.id === tF) && (!lF || r.l.id === lF));
+  settingsPlayerRows = rows;
   const con = document.getElementById('contentListTable');
   if (!rows.length) { con.innerHTML = '<div class="msg-c">コンテンツがありません</div>'; return; }
   let h = '<table class="cl"><thead><tr><th style="white-space:nowrap;">講</th><th>タイトル</th><th>操作</th></tr></thead><tbody>';
@@ -1039,15 +976,16 @@ document.getElementById('saveTitlesBtn').addEventListener('click', async () => {
   persistLocal();
   try {
     await saveSettingsJson();
-    toast('タイトルを保存しました（LocalStorage + R2）');
+    toast('タイトルを保存しました');
   } catch (e) {
-    toast(e.message === 'R2未設定' ? 'LocalStorageに保存しました（R2未設定）' : 'LocalStorageに保存しました（R2アップロード失敗: ' + e.message + '）', e.message === 'R2未設定' ? 'ok' : 'err');
+    toast(e.message === 'R2未設定' ? 'タイトルを保存しました' : 'タイトルを保存しました（R2エラー）', e.message === 'R2未設定' ? 'ok' : 'err');
   }
 });
 
 /* ── Player ── */
 const audio    = document.getElementById('audio');
 const pOverlay = document.getElementById('playerOverlay');
+let cur = null, settingsPlayerRows = [];
 
 function fmt(s) { return isFinite(s) ? Math.floor(s/60) + ':' + String(Math.floor(s%60)).padStart(2,'0') : '0:00'; }
 function updProg() {
@@ -1096,6 +1034,8 @@ function openPlayer(yId, tId, lId, n) {
   const t = cfg.terms.find(x => x.id === tId);
   const l = cfg.levels.find(x => x.id === lId);
   if (!y || !t || !l) return;
+  cur = { yId, tId, lId, n };
+  updateNavButtons();
   document.getElementById('playerTitle').textContent = `${y.name} / ${t.name} / ${l.name} / 第${n}講`;
   audio.src = audioUrl(y, t, l, n);
   audio.currentTime = 0; setPI(false);
@@ -1104,7 +1044,30 @@ function openPlayer(yId, tId, lId, n) {
   setSpeed(1);
   pOverlay.classList.add('open');
 }
-function closePlayer() { audio.pause(); pOverlay.classList.remove('open'); }
+function closePlayer() { audio.pause(); pOverlay.classList.remove('open'); cur = null; }
+
+function getCurIdx() {
+  if (!cur) return -1;
+  return settingsPlayerRows.findIndex(r => r.y.id === cur.yId && r.t.id === cur.tId && r.l.id === cur.lId && r.n === cur.n);
+}
+function updateNavButtons() {
+  const idx = getCurIdx();
+  const total = settingsPlayerRows.length;
+  const btnP = document.getElementById('btnPrevLesson');
+  const btnN = document.getElementById('btnNextLesson');
+  if (btnP) btnP.disabled = idx <= 0;
+  if (btnN) btnN.disabled = idx < 0 || idx >= total - 1;
+  const lbl = document.getElementById('navLabel');
+  if (lbl) lbl.textContent = total > 1 ? `${idx + 1} / ${total}` : '';
+}
+document.getElementById('btnPrevLesson').addEventListener('click', () => {
+  const idx = getCurIdx();
+  if (idx > 0) { const r = settingsPlayerRows[idx - 1]; openPlayer(r.y.id, r.t.id, r.l.id, r.n); }
+});
+document.getElementById('btnNextLesson').addEventListener('click', () => {
+  const idx = getCurIdx();
+  if (idx >= 0 && idx < settingsPlayerRows.length - 1) { const r = settingsPlayerRows[idx + 1]; openPlayer(r.y.id, r.t.id, r.l.id, r.n); }
+});
 document.getElementById('btnClose').addEventListener('click', closePlayer);
 pOverlay.addEventListener('click', e => { if (e.target === pOverlay) closePlayer(); });
 
@@ -1151,21 +1114,6 @@ if (!lsAvailable) {
   banner.innerHTML = '⚠️ LocalStorageが無効です。プライベートブラウジングをオフにするか、ブラウザのストレージ設定を確認してください。設定は保存されません。';
   document.body.appendChild(banner);
 }
-document.getElementById('versionBadge').textContent = `v2026-05-28a ${lsAvailable ? '💾' : '🚫LocalStorage'}`;
-
-/* ── Debug helper ── */
-window.debugLS = function() {
-  const raw = localStorage.getItem(SK);
-  if (!raw) { console.log('[DKE] localStorage: empty'); return null; }
-  const data = JSON.parse(raw);
-  console.log('[DKE] localStorage:', JSON.stringify(data, null, 2));
-  console.log('[DKE] cfg (in memory):', JSON.stringify({
-    years: cfg.years, terms: cfg.terms, levels: cfg.levels,
-    defaultYear: cfg.defaultYear, defaultTerm: cfg.defaultTerm, defaultLevel: cfg.defaultLevel,
-    r2BaseUrl: cfg.r2BaseUrl, r2WorkerUrl: cfg.r2WorkerUrl
-  }, null, 2));
-  return data;
-};
 
 /* ── Init ── */
 async function init() {
