@@ -43,9 +43,9 @@
     footer { text-align: center; padding: 20px; font-size: .78rem; color: var(--muted); }
     footer a { color: var(--navy); text-decoration: none; }
 
-    .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 200; align-items: flex-end; }
+    .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 200; align-items: center; justify-content: center; }
     .overlay.open { display: flex; }
-    .sheet { width: 100%; max-height: 92dvh; background: #fff; border-radius: 20px 20px 0 0; padding: 20px 20px 32px; overflow-y: auto; }
+    .sheet { width: 92%; max-width: 480px; max-height: 90dvh; background: #fff; border-radius: 16px; padding: 20px 20px 28px; overflow-y: auto; }
 
     .pl-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; }
     .pl-title { font-size: .95rem; font-weight: 700; color: var(--navy); line-height: 1.4; flex: 1; padding-right: 12px; }
@@ -87,7 +87,7 @@
 <body>
 
 <header class="app-header">
-  <span class="app-title">DKE Medical English</span>
+  <span class="app-title" id="appTitle">DKE Medical English</span>
   <span class="badge" id="completionBadge">完了: 0 / 0</span>
 </header>
 
@@ -184,6 +184,7 @@ async function loadCfg() {
     defaultTerm:  local?.defaultTerm  || '',
     defaultLevel: local?.defaultLevel || '',
     lessonTitles: local?.lessonTitles || {},
+    siteTitle:    local?.siteTitle    || '',
   };
   // Overlay with R2 data (only non-empty values override)
   for (const url of fetchUrls) {
@@ -199,6 +200,7 @@ async function loadCfg() {
       if (j.defaultTerm)  cfg.defaultTerm  = j.defaultTerm;
       if (j.defaultLevel) cfg.defaultLevel = j.defaultLevel;
       if (j.lessonTitles && Object.keys(j.lessonTitles).length) cfg.lessonTitles = j.lessonTitles;
+      if (j.siteTitle) cfg.siteTitle = j.siteTitle;
       break;
     } catch {}
   }
@@ -400,6 +402,7 @@ async function init() {
   loadDone();
   try { await loadCfg(); }
   catch { document.getElementById('tableContainer').innerHTML = '<div class="msg-c err">コンテンツを読み込めませんでした</div>'; return; }
+  if (cfg.siteTitle) document.getElementById('appTitle').textContent = cfg.siteTitle;
   populateFilters(); render(); handleParams();
   document.getElementById('filterYear').addEventListener('change',  () => { saveFilter(); render(); });
   document.getElementById('filterTerm').addEventListener('change',  () => { saveFilter(); render(); });

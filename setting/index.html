@@ -86,9 +86,10 @@
     @keyframes slideUp { from { opacity: 0; transform: translateX(-50%) translateY(12px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
 
     /* Overlay / Sheet */
-    .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 200; align-items: flex-end; }
+    .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 200; align-items: center; justify-content: center; }
     .overlay.open { display: flex; }
-    .sheet { width: 100%; max-height: 92dvh; background: #fff; border-radius: 20px 20px 0 0; padding: 20px 20px 32px; overflow-y: auto; }
+    .sheet { width: 92%; max-width: 480px; max-height: 90dvh; background: #fff; border-radius: 16px; padding: 20px 20px 28px; overflow-y: auto; }
+    .sheet.qr-sheet { max-width: 340px; }
 
     /* Player */
     .pl-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; }
@@ -120,7 +121,7 @@
     input[type=range]::-moz-range-thumb { width: 20px; height: 20px; border-radius: 50%; background: var(--navy); cursor: pointer; border: none; }
 
     /* QR */
-    .qr-sheet { max-width: 360px; margin: 0 auto; text-align: center; }
+    .qr-sheet { text-align: center; }
     .qr-sub { font-size: .85rem; color: var(--muted); margin-bottom: 16px; }
     #qrCanvas { display: inline-block; margin-bottom: 14px; }
     .qr-url { font-size: .72rem; color: var(--navy); word-break: break-all; margin-bottom: 14px; line-height: 1.5; }
@@ -145,6 +146,14 @@
 
 <!-- Tab1: コンテンツ設定 -->
 <div class="tab-panel active" id="t1">
+  <div class="sec-gap">
+    <div class="sec-title">サイト設定</div>
+    <div class="form-row">
+      <label class="form-label">サイトタイトル</label>
+      <input class="form-input" id="siteTitleInput" type="text" placeholder="DKE Medical English">
+      <span class="form-hint">ユーザーページのヘッダーに表示されるタイトル</span>
+    </div>
+  </div>
   <div class="sec-gap">
     <div class="sec-title">年度の設定</div>
     <div class="crud-list" id="yearList"></div>
@@ -320,7 +329,7 @@ const DEFAULTS = {
 
 let cfg = {
   r2BaseUrl: '', r2AccountId: '', r2AccessKeyId: '', r2SecretKey: '', r2Bucket: 'textaudio',
-  r2WorkerUrl: '', siteUrl: '',
+  r2WorkerUrl: '', siteUrl: '', siteTitle: '',
   years: [], terms: [], levels: [],
   defaultYear: '', defaultTerm: '', defaultLevel: '',
   lessonTitles: {}
@@ -364,6 +373,7 @@ async function loadAllSettings() {
   cfg.r2BaseUrl     = local?.r2BaseUrl     || DEFAULTS.r2BaseUrl;
   cfg.r2WorkerUrl   = local?.r2WorkerUrl   || '';
   cfg.siteUrl       = local?.siteUrl       || '';
+  cfg.siteTitle     = local?.siteTitle     || '';
   // 2. Apply localStorage content settings as the starting point
   cfg.years        = local?.years?.length  ? local.years  : [...DEFAULTS.years];
   cfg.terms        = local?.terms?.length  ? local.terms  : [...DEFAULTS.terms];
@@ -394,11 +404,15 @@ async function loadAllSettings() {
       if (j.r2WorkerUrl && !local?.r2WorkerUrl) cfg.r2WorkerUrl = j.r2WorkerUrl;
       if (j.r2BaseUrl   && !local?.r2BaseUrl)   cfg.r2BaseUrl   = j.r2BaseUrl;
       if (j.siteUrl     && !local?.siteUrl)     cfg.siteUrl     = j.siteUrl;
+      if (j.siteTitle   && !local?.siteTitle)   cfg.siteTitle   = j.siteTitle;
       break; // success — stop trying further URLs
     } catch {}
   }
   // Note: intentionally NO persistLocal() here — avoids overwriting credentials
 
+  // Populate siteTitle input
+  const siteTitleEl = document.getElementById('siteTitleInput');
+  if (siteTitleEl) siteTitleEl.value = cfg.siteTitle || '';
   // Show load status
   const statusEl = document.getElementById('contentStatus');
   if (statusEl) {
@@ -417,7 +431,7 @@ function persistLocal() {
   localStorage.setItem(SK, JSON.stringify({
     r2BaseUrl: cfg.r2BaseUrl, r2AccountId: cfg.r2AccountId,
     r2AccessKeyId: cfg.r2AccessKeyId, r2SecretKey: cfg.r2SecretKey, r2Bucket: cfg.r2Bucket,
-    r2WorkerUrl: cfg.r2WorkerUrl, siteUrl: cfg.siteUrl,
+    r2WorkerUrl: cfg.r2WorkerUrl, siteUrl: cfg.siteUrl, siteTitle: cfg.siteTitle,
     years: cfg.years, terms: cfg.terms, levels: cfg.levels,
     defaultYear: cfg.defaultYear, defaultTerm: cfg.defaultTerm, defaultLevel: cfg.defaultLevel,
     lessonTitles: cfg.lessonTitles
@@ -426,7 +440,7 @@ function persistLocal() {
 
 function settingsJson() {
   return JSON.stringify({
-    r2BaseUrl: cfg.r2BaseUrl, r2WorkerUrl: cfg.r2WorkerUrl, siteUrl: cfg.siteUrl,
+    r2BaseUrl: cfg.r2BaseUrl, r2WorkerUrl: cfg.r2WorkerUrl, siteUrl: cfg.siteUrl, siteTitle: cfg.siteTitle,
     years: cfg.years, terms: cfg.terms, levels: cfg.levels,
     defaultYear: cfg.defaultYear, defaultTerm: cfg.defaultTerm, defaultLevel: cfg.defaultLevel,
     lessonTitles: cfg.lessonTitles
@@ -552,6 +566,7 @@ function delArr(arr, i, render) { cfg[arr].splice(i, 1); render(); }
 
 /* ── Save content settings ── */
 document.getElementById('saveContentBtn').addEventListener('click', async () => {
+  cfg.siteTitle = document.getElementById('siteTitleInput').value.trim();
   if (!cfg.years.length && !cfg.terms.length && !cfg.levels.length) {
     toast('保存するコンテンツがありません', 'err'); return;
   }
