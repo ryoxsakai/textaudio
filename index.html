@@ -142,6 +142,11 @@
         <button class="btn-preset" data-speed="2">2.0x</button>
       </div>
     </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;padding:0 4px;">
+      <button class="ctrl-btn" id="btnPrevLesson" style="min-width:40px;min-height:40px;font-size:1.1rem;" title="前の講" disabled><i class="fas fa-backward-step"></i></button>
+      <span id="navLabel" style="font-size:.76rem;color:var(--muted);font-weight:600;letter-spacing:.04em;"></span>
+      <button class="ctrl-btn" id="btnNextLesson" style="min-width:40px;min-height:40px;font-size:1.1rem;" title="次の講" disabled><i class="fas fa-forward-step"></i></button>
+    </div>
     <button class="btn-mark-done" id="btnMarkDone">
       <i class="fas fa-check"></i><span>完了にする</span>
     </button>
@@ -159,7 +164,7 @@ const DEFAULTS = {
   levels: [{ id: 'l1', name: 'High 読解', tag: 'high_reading' }, { id: 'l2', name: 'High 構文', tag: 'high_structure' }, { id: 'l3', name: 'Standard 読解', tag: 'standard_reading' }, { id: 'l4', name: 'Standard 構文', tag: 'standard_structure' }]
 };
 
-let cfg = null, done = {}, cur = null;
+let cfg = null, done = {}, cur = null, currentRows = [];
 function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
 function loadDone() { try { done = JSON.parse(localStorage.getItem(DK) || '{}'); } catch { done = {}; } }
@@ -366,6 +371,11 @@ function openPlayer(yId, tId, lId, n) {
   const l = cfg.levels.find(x => x.id === lId);
   if (!y || !t || !l) return;
   cur = { yId, tId, lId, n };
+  const yF = document.getElementById('filterYear').value;
+  const tF = document.getElementById('filterTerm').value;
+  const lF = document.getElementById('filterLevel').value;
+  currentRows = allRows().filter(r => (!yF || r.y.id === yF) && (!tF || r.t.id === tF) && (!lF || r.l.id === lF));
+  updateNavButtons();
   const lessonTitle = cfg.lessonTitles?.[mk(yId, tId, lId, n)] || '';
   const mainLabel = `${y.name} / ${t.name} / ${l.name} / 第${n}講`;
   document.getElementById('playerTitle').innerHTML = lessonTitle
@@ -382,6 +392,29 @@ function openPlayer(yId, tId, lId, n) {
 }
 function closePlayer() { audio.pause(); overlay.classList.remove('open'); cur = null; }
 document.getElementById('btnClose').addEventListener('click', closePlayer);
+
+function getCurIdx() {
+  if (!cur) return -1;
+  return currentRows.findIndex(r => r.y.id === cur.yId && r.t.id === cur.tId && r.l.id === cur.lId && r.n === cur.n);
+}
+function updateNavButtons() {
+  const idx = getCurIdx();
+  const total = currentRows.length;
+  const btnP = document.getElementById('btnPrevLesson');
+  const btnN = document.getElementById('btnNextLesson');
+  if (btnP) btnP.disabled = idx <= 0;
+  if (btnN) btnN.disabled = idx < 0 || idx >= total - 1;
+  const lbl = document.getElementById('navLabel');
+  if (lbl) lbl.textContent = total > 1 ? `${idx + 1} / ${total}` : '';
+}
+document.getElementById('btnPrevLesson').addEventListener('click', () => {
+  const idx = getCurIdx();
+  if (idx > 0) { const r = currentRows[idx - 1]; openPlayer(r.y.id, r.t.id, r.l.id, r.n); }
+});
+document.getElementById('btnNextLesson').addEventListener('click', () => {
+  const idx = getCurIdx();
+  if (idx >= 0 && idx < currentRows.length - 1) { const r = currentRows[idx + 1]; openPlayer(r.y.id, r.t.id, r.l.id, r.n); }
+});
 overlay.addEventListener('click', e => { if (e.target === overlay) closePlayer(); });
 
 function handleParams() {
