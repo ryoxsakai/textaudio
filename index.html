@@ -11,67 +11,85 @@
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
-      --primary: #4A86C8; --primary-dk: #3570B0; --primary-lt: #EAF3FC;
-      --green: #4CAF82;   --green-lt:  #E8F7F2;
-      --red: #DC7070;
-      --border: #C5DEF5; --bg: #F2F8FE; --text: #2A3F55; --muted: #7A93A8;
+      --primary: #5B8DEF; --primary-dk: #3F73D6; --primary-lt: #EAF1FE;
+      --grad: linear-gradient(135deg, #5B8DEF 0%, #8B7FE8 100%);
+      --green: #3FB984;   --green-lt:  #E7F7F0;
+      --red: #E07A7A;
+      --border: #DCE6F4; --bg: #F3F7FC; --text: #28324A; --muted: #95A3BA;
     }
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino Sans", sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; -webkit-font-smoothing: antialiased; }
 
     /* ── Header ── */
-    .app-header { background: var(--primary); color: #fff; padding: 0 16px; height: 56px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 10; box-shadow: 0 2px 12px rgba(74,134,200,.25); }
-    .app-title { font-size: 1rem; font-weight: 700; letter-spacing: .02em; }
-    .badge { font-size: .75rem; background: rgba(255,255,255,.22); padding: 4px 12px; border-radius: 20px; white-space: nowrap; }
+    .app-header { background: linear-gradient(125deg, #5B8DEF 0%, #7C84EC 52%, #A98CE2 100%); color: #fff; padding: 28px 22px 32px; border-radius: 0 0 28px 28px; display: flex; align-items: center; justify-content: space-between; gap: 18px; box-shadow: 0 8px 26px rgba(91,141,239,.3); position: relative; z-index: 5; }
+    .app-title { font-size: 1.5rem; font-weight: 700; line-height: 1.25; letter-spacing: .01em; flex: 1; min-width: 0; }
+
+    .ring { position: relative; width: 86px; height: 86px; flex-shrink: 0; }
+    .ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+    .ring circle { fill: none; stroke-width: 7; stroke-linecap: round; }
+    .ring .ring-track { stroke: rgba(255,255,255,.28); }
+    .ring .ring-fill { stroke: #fff; stroke-dasharray: 238.76; stroke-dashoffset: 238.76; transition: stroke-dashoffset .6s cubic-bezier(.4,0,.2,1); }
+    .ring-text { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #fff; }
+    .ring-pct { font-size: 1.25rem; font-weight: 700; line-height: 1; }
+    .ring-lbl { font-size: .62rem; margin-top: 3px; opacity: .92; letter-spacing: .04em; }
 
     /* ── Filters ── */
-    .filter-bar { background: #fff; padding: 10px 16px; display: flex; flex-wrap: wrap; gap: 8px; border-bottom: 1px solid var(--border); box-shadow: 0 1px 4px rgba(74,134,200,.08); }
-    .filter-bar select { flex: 1 1 calc(33% - 8px); min-width: 100px; height: 38px; padding: 0 8px; border: 1.5px solid var(--border); border-radius: 8px; font-size: .8rem; background: var(--primary-lt); color: var(--text); }
+    .filters { display: flex; gap: 10px; padding: 18px 16px 4px; flex-wrap: wrap; }
+    .pill { flex: 1 1 calc(33% - 10px); min-width: 98px; display: flex; align-items: center; gap: 7px; background: #fff; border-radius: 14px; padding: 0 11px; height: 50px; box-shadow: 0 3px 12px rgba(80,120,200,.08); cursor: pointer; transition: box-shadow .15s; }
+    .pill:active { box-shadow: 0 1px 5px rgba(80,120,200,.12); }
+    .pill > i:first-child { color: var(--primary); font-size: .9rem; flex-shrink: 0; }
+    .pill select { flex: 1; min-width: 0; border: none; background: none; font-size: .82rem; font-weight: 600; color: var(--text); appearance: none; -webkit-appearance: none; cursor: pointer; padding: 0; }
+    .pill select:focus { outline: none; }
+    .pill-arrow { color: var(--muted); font-size: .68rem; flex-shrink: 0; pointer-events: none; }
 
-    /* ── Table ── */
-    .table-scroll { overflow-x: auto; padding: 16px; }
-    table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 14px; overflow: hidden; box-shadow: 0 2px 12px rgba(74,134,200,.1); }
-    thead th { background: var(--primary); color: #fff; padding: 11px 14px; text-align: left; font-size: .78rem; font-weight: 600; letter-spacing: .03em; }
-    tbody td { padding: 10px 14px; border-bottom: 1px solid #EDF4FB; font-size: .84rem; vertical-align: middle; }
-    tbody tr:last-child td { border-bottom: none; }
-    tbody tr.done-row { background: var(--green-lt); }
-    .ops { display: flex; gap: 10px; align-items: center; }
+    /* ── Section header ── */
+    .section-head { display: flex; align-items: center; justify-content: space-between; padding: 18px 20px 12px; }
+    .sh-title { font-size: 1.08rem; font-weight: 700; color: var(--text); display: flex; align-items: center; gap: 9px; }
+    .sh-title i { color: var(--primary); }
+    .sh-count { font-size: .76rem; font-weight: 600; color: var(--muted); background: #fff; padding: 6px 13px; border-radius: 20px; box-shadow: 0 2px 8px rgba(80,120,200,.08); display: flex; align-items: center; gap: 6px; }
+    .sh-count i { color: var(--green); }
 
-    /* ── Icon-only buttons (list) ── */
-    .icon-btn { display: inline-flex; align-items: center; justify-content: center; border: none; background: none; cursor: pointer; padding: 4px; border-radius: 6px; font-size: 1.05rem; min-width: 32px; min-height: 32px; -webkit-tap-highlight-color: transparent; transition: opacity .15s; }
-    .icon-btn:active { opacity: .55; }
-    .icon-btn.play-btn { color: var(--primary); }
-    .icon-btn.play-btn:disabled { color: var(--border); pointer-events: none; }
-    .icon-btn.done-btn { color: var(--muted); }
-    .icon-btn.done-btn.is-done { color: var(--green); }
+    /* ── Lesson cards ── */
+    .lesson-list { display: flex; flex-direction: column; gap: 11px; padding: 0 16px 36px; }
+    .lesson-card { display: flex; align-items: center; gap: 13px; width: 100%; text-align: left; background: #fff; border: none; border-radius: 16px; padding: 15px 16px; box-shadow: 0 3px 14px rgba(80,120,200,.08); cursor: pointer; -webkit-tap-highlight-color: transparent; transition: transform .12s, box-shadow .12s; position: relative; overflow: hidden; font-family: inherit; }
+    .lesson-card:active { transform: scale(.985); box-shadow: 0 1px 6px rgba(80,120,200,.1); }
+    .lesson-card.is-done::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--green); }
+    .lesson-card:disabled { cursor: default; }
+    .lc-num { font-size: .92rem; font-weight: 700; color: var(--text); white-space: nowrap; flex-shrink: 0; }
+    .lc-title { flex: 1; min-width: 0; font-size: .88rem; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .lc-title.empty { color: var(--border); font-weight: 400; }
+    .lc-status { font-size: .72rem; font-weight: 600; white-space: nowrap; flex-shrink: 0; color: var(--muted); display: flex; align-items: center; gap: 4px; }
+    .lc-status.done { color: var(--green); }
+    .play-fab { flex-shrink: 0; width: 44px; height: 44px; border-radius: 50%; background: var(--grad); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 1rem; box-shadow: 0 4px 12px rgba(91,141,239,.35); }
+    .play-fab i { margin-left: 2px; }
+    .lesson-card:disabled .play-fab { background: #CFD9E8; box-shadow: none; }
+    .lesson-card:disabled .lc-num, .lesson-card:disabled .lc-title { color: var(--muted); }
 
     .msg-c { text-align: center; padding: 48px 20px; color: var(--muted); font-size: .9rem; }
     .msg-c.err { color: var(--red); }
 
-    footer { text-align: center; padding: 20px; font-size: .78rem; color: var(--muted); }
-    footer a { color: var(--primary); text-decoration: none; }
-
     /* ── Overlay / Sheet ── */
-    .overlay { display: none; position: fixed; inset: 0; background: rgba(30,50,80,.38); z-index: 200; align-items: center; justify-content: center; }
+    .overlay { display: none; position: fixed; inset: 0; background: rgba(30,45,75,.42); z-index: 200; align-items: center; justify-content: center; }
     .overlay.open { display: flex; }
-    .sheet { width: 92%; max-width: 460px; max-height: 90dvh; background: #fff; border-radius: 20px; padding: 22px 22px 28px; overflow-y: auto; box-shadow: 0 8px 40px rgba(74,134,200,.22); }
+    .sheet { width: 92%; max-width: 460px; max-height: 90dvh; background: #fff; border-radius: 24px; padding: 22px 22px 28px; overflow-y: auto; box-shadow: 0 12px 48px rgba(60,90,160,.28); }
 
     /* ── Player ── */
     .pl-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 18px; }
-    .pl-title { font-size: .9rem; font-weight: 700; color: var(--text); line-height: 1.45; flex: 1; padding-right: 12px; }
-    .btn-close { width: 30px; height: 30px; border: none; background: var(--primary-lt); border-radius: 50%; font-size: .82rem; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: var(--primary); }
+    .pl-title { font-size: .92rem; font-weight: 700; color: var(--text); line-height: 1.45; flex: 1; padding-right: 12px; }
+    .btn-close { width: 32px; height: 32px; border: none; background: var(--primary-lt); border-radius: 50%; font-size: .85rem; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: var(--primary); }
     .btn-close:active { background: var(--border); }
 
     .prog-wrap { position: relative; height: 40px; display: flex; align-items: center; cursor: pointer; touch-action: none; user-select: none; margin-bottom: 2px; }
     .prog-track { position: absolute; left: 0; right: 0; height: 5px; background: var(--primary-lt); border-radius: 3px; overflow: hidden; }
-    .prog-fill { height: 100%; width: 0; background: var(--primary); border-radius: 3px; }
-    .prog-thumb { position: absolute; width: 15px; height: 15px; background: var(--primary); border-radius: 50%; top: 50%; left: 0; transform: translate(-50%,-50%); box-shadow: 0 1px 5px rgba(74,134,200,.4); }
+    .prog-fill { height: 100%; width: 0; background: var(--grad); border-radius: 3px; }
+    .prog-thumb { position: absolute; width: 16px; height: 16px; background: var(--primary); border-radius: 50%; top: 50%; left: 0; transform: translate(-50%,-50%); box-shadow: 0 1px 6px rgba(91,141,239,.45); }
     .time-row { display: flex; justify-content: space-between; font-size: .72rem; color: var(--muted); margin-bottom: 18px; }
 
     .ctrl-row { display: flex; align-items: center; justify-content: center; gap: 28px; margin-bottom: 18px; }
     .ctrl-btn { display: flex; align-items: center; justify-content: center; border: none; background: none; border-radius: 50%; min-width: 46px; min-height: 46px; cursor: pointer; color: var(--primary); font-size: 1.35rem; -webkit-tap-highlight-color: transparent; transition: background .15s; }
     .ctrl-btn:active { background: var(--primary-lt); }
-    .ctrl-btn-main { background: var(--primary); color: #fff; min-width: 62px; min-height: 62px; font-size: 1.45rem; box-shadow: 0 4px 18px rgba(74,134,200,.35); }
-    .ctrl-btn-main:active { background: var(--primary-dk); }
+    .ctrl-btn:disabled { color: var(--border); pointer-events: none; }
+    .ctrl-btn-main { background: var(--grad); color: #fff; min-width: 64px; min-height: 64px; font-size: 1.5rem; box-shadow: 0 6px 20px rgba(91,141,239,.38); }
+    .ctrl-btn-main:active { background: var(--primary-dk); opacity: .92; }
 
     /* ── Speed presets ── */
     .speed-section { margin-bottom: 18px; }
@@ -81,17 +99,31 @@
     .btn-preset.active { border-color: var(--primary); background: var(--primary); color: #fff; }
     .btn-preset:active { opacity: .7; }
 
+    /* ── Lesson nav ── */
+    .lesson-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; padding: 0 4px; }
+    .lesson-nav .ctrl-btn { min-width: 40px; min-height: 40px; font-size: 1.15rem; }
+    .nav-label { font-size: .76rem; color: var(--muted); font-weight: 600; letter-spacing: .04em; }
+
     /* ── Mark done ── */
-    .btn-mark-done { width: 100%; height: 46px; border: none; border-radius: 12px; font-size: .88rem; font-weight: 700; cursor: pointer; background: var(--green); color: #fff; -webkit-tap-highlight-color: transparent; transition: opacity .15s; display: flex; align-items: center; justify-content: center; gap: 8px; }
+    .btn-mark-done { width: 100%; height: 48px; border: none; border-radius: 14px; font-size: .9rem; font-weight: 700; cursor: pointer; background: var(--green); color: #fff; -webkit-tap-highlight-color: transparent; transition: opacity .15s; display: flex; align-items: center; justify-content: center; gap: 8px; }
     .btn-mark-done:active { opacity: .8; }
-    .btn-mark-done.is-done { background: #E0EAF4; color: var(--muted); }
+    .btn-mark-done.is-done { background: var(--primary-lt); color: var(--muted); }
   </style>
 </head>
 <body>
 
 <header class="app-header">
-  <span class="app-title" id="appTitle">DKE Medical English</span>
-  <span class="badge" id="completionBadge">完了: 0 / 0</span>
+  <h1 class="app-title" id="appTitle">DKE Medical English</h1>
+  <div class="ring">
+    <svg viewBox="0 0 84 84">
+      <circle class="ring-track" cx="42" cy="42" r="38"/>
+      <circle class="ring-fill" id="ringFill" cx="42" cy="42" r="38"/>
+    </svg>
+    <div class="ring-text">
+      <span class="ring-pct" id="progPct">0%</span>
+      <span class="ring-lbl">完了率</span>
+    </div>
+  </div>
 </header>
 <script>
 (function(){
@@ -103,16 +135,18 @@
 })();
 </script>
 
-<div class="filter-bar">
-  <span style="color:var(--muted);display:flex;align-items:center;font-size:.85rem;flex-shrink:0;"><i class="fas fa-filter"></i></span>
-  <select id="filterYear"></select>
-  <select id="filterTerm"></select>
-  <select id="filterLevel"></select>
+<div class="filters">
+  <label class="pill"><i class="fas fa-calendar-days"></i><select id="filterYear"></select><i class="fas fa-chevron-down pill-arrow"></i></label>
+  <label class="pill"><i class="fas fa-clock"></i><select id="filterTerm"></select><i class="fas fa-chevron-down pill-arrow"></i></label>
+  <label class="pill"><i class="fas fa-signal"></i><select id="filterLevel"></select><i class="fas fa-chevron-down pill-arrow"></i></label>
 </div>
 
-<div class="table-scroll">
-  <div id="tableContainer"><div class="msg-c">読み込み中…</div></div>
+<div class="section-head">
+  <span class="sh-title"><i class="fas fa-headphones"></i> 講義一覧</span>
+  <span class="sh-count" id="completionBadge"><i class="fas fa-circle-check"></i> 完了 0</span>
 </div>
+
+<div class="lesson-list" id="tableContainer"><div class="msg-c">読み込み中…</div></div>
 
 <!-- Player modal -->
 <div class="overlay" id="overlay">
@@ -142,10 +176,10 @@
         <button class="btn-preset" data-speed="2">2.0x</button>
       </div>
     </div>
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;padding:0 4px;">
-      <button class="ctrl-btn" id="btnPrevLesson" style="min-width:40px;min-height:40px;font-size:1.1rem;" title="前の講" disabled><i class="fas fa-backward-step"></i></button>
-      <span id="navLabel" style="font-size:.76rem;color:var(--muted);font-weight:600;letter-spacing:.04em;"></span>
-      <button class="ctrl-btn" id="btnNextLesson" style="min-width:40px;min-height:40px;font-size:1.1rem;" title="次の講" disabled><i class="fas fa-forward-step"></i></button>
+    <div class="lesson-nav">
+      <button class="ctrl-btn" id="btnPrevLesson" title="前の講" disabled><i class="fas fa-backward-step"></i></button>
+      <span class="nav-label" id="navLabel"></span>
+      <button class="ctrl-btn" id="btnNextLesson" title="次の講" disabled><i class="fas fa-forward-step"></i></button>
     </div>
     <button class="btn-mark-done" id="btnMarkDone">
       <i class="fas fa-check"></i><span>完了にする</span>
@@ -225,9 +259,14 @@ function audioUrlWorker(y, t, l, n) {
   return `${base}/${audioPath(y, t, l, n)}`;
 }
 
-function updateBadge() {
-  const count = allRows().filter(r => done[r.key]).length;
-  document.getElementById('completionBadge').innerHTML = `<i class="fas fa-circle-check"></i> 完了: ${count}`;
+const RING_CIRC = 238.76;
+function updateProgress(rows) {
+  const total = rows.length;
+  const cnt = rows.filter(r => done[r.key]).length;
+  const pct = total ? Math.round(cnt / total * 100) : 0;
+  document.getElementById('progPct').textContent = pct + '%';
+  document.getElementById('ringFill').style.strokeDashoffset = RING_CIRC * (1 - pct / 100);
+  document.getElementById('completionBadge').innerHTML = `<i class="fas fa-circle-check"></i> 完了 ${cnt}`;
 }
 
 function render() {
@@ -235,25 +274,25 @@ function render() {
   const tF = document.getElementById('filterTerm').value;
   const lF = document.getElementById('filterLevel').value;
   const rows = allRows().filter(r => (!yF || r.y.id === yF) && (!tF || r.t.id === tF) && (!lF || r.l.id === lF));
-  updateBadge();
+  updateProgress(rows);
   const con = document.getElementById('tableContainer');
   if (!rows.length) { con.innerHTML = '<div class="msg-c">該当するコンテンツがありません</div>'; return; }
-  let h = '<table><thead><tr><th><i class="fas fa-headphones fa-fw"></i> 講</th><th><i class="fas fa-tag fa-fw"></i> タイトル</th><th></th></tr></thead><tbody>';
+  let h = '';
   for (const r of rows) {
     const d = !!done[r.key];
     const lt = cfg.lessonTitles?.[r.key] || '';
-    h += `<tr class="${d ? 'done-row' : ''}">
-      <td style="white-space:nowrap;font-weight:600;">第${r.n}講</td>
-      <td style="font-size:.82rem;color:var(--muted);">${lt ? esc(lt) : '<span style="color:var(--border)">—</span>'}</td>
-      <td class="ops">
-        <button class="icon-btn play-btn" id="play-${r.key}" disabled onclick="openPlayer('${r.y.id}','${r.t.id}','${r.l.id}',${r.n})" title="再生"><i class="fas fa-play"></i></button>
-      </td>
-    </tr>`;
+    const status = d ? '<i class="fas fa-circle-check"></i> 完了' : '未再生';
+    h += `<button class="lesson-card${d ? ' is-done' : ''}" id="card-${r.key}" disabled onclick="openPlayer('${r.y.id}','${r.t.id}','${r.l.id}',${r.n})">
+      <span class="lc-num">第${r.n}講</span>
+      <span class="lc-title${lt ? '' : ' empty'}">${lt ? esc(lt) : 'タイトル未設定'}</span>
+      <span class="lc-status${d ? ' done' : ''}">${status}</span>
+      <span class="play-fab"><i class="fas fa-play"></i></span>
+    </button>`;
   }
-  con.innerHTML = h + '</tbody></table>';
+  con.innerHTML = h;
   rows.forEach(r => {
     const enablePlay = () => {
-      const btn = document.getElementById(`play-${r.key}`);
+      const btn = document.getElementById(`card-${r.key}`);
       if (btn) btn.disabled = false;
     };
     fetch(audioUrlWorker(r.y, r.t, r.l, r.n), { method: 'HEAD' })
