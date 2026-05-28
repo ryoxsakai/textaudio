@@ -131,82 +131,82 @@
 
 <header class="app-header">
   <a href="../"><i class="fas fa-arrow-left"></i></a>
-  <span class="app-title">設定</span>
+  <span class="app-title"><i class="fas fa-gear"></i> 設定</span>
   <span id="versionBadge" style="margin-left:auto;font-size:.7rem;opacity:.6;font-weight:400;">v2026-05-28a</span>
 </header>
 
 <nav class="tab-nav">
-  <button class="tab-btn active" data-tab="t1">コンテンツ設定</button>
-  <button class="tab-btn" data-tab="t2">R2設定</button>
-  <button class="tab-btn" data-tab="t3">ファイルアップロード</button>
-  <button class="tab-btn" data-tab="t4">コンテンツ一覧</button>
+  <button class="tab-btn active" data-tab="t1"><i class="fas fa-sliders fa-fw"></i> コンテンツ設定</button>
+  <button class="tab-btn" data-tab="t2"><i class="fas fa-cloud fa-fw"></i> R2設定</button>
+  <button class="tab-btn" data-tab="t3"><i class="fas fa-upload fa-fw"></i> アップロード</button>
+  <button class="tab-btn" data-tab="t4"><i class="fas fa-table-list fa-fw"></i> コンテンツ一覧</button>
 </nav>
 
 <!-- Tab1: コンテンツ設定 -->
 <div class="tab-panel active" id="t1">
   <div class="sec-gap">
-    <div class="sec-title">サイト設定</div>
+    <div class="sec-title"><i class="fas fa-globe fa-fw"></i> サイト設定</div>
     <div class="form-row">
-      <label class="form-label">サイトタイトル</label>
+      <label class="form-label"><i class="fas fa-heading fa-fw"></i> サイトタイトル</label>
       <input class="form-input" id="siteTitleInput" type="text" placeholder="DKE Medical English">
       <span class="form-hint">ユーザーページのヘッダーに表示されるタイトル</span>
     </div>
   </div>
   <div class="sec-gap">
-    <div class="sec-title">年度の設定</div>
+    <div class="sec-title"><i class="fas fa-calendar-days fa-fw"></i> 年度の設定</div>
     <div class="crud-list" id="yearList"></div>
-    <button class="btn btn-add" id="addYearBtn">＋ 年度を追加</button>
+    <button class="btn btn-add" id="addYearBtn"><i class="fas fa-plus"></i> 年度を追加</button>
   </div>
   <div class="sec-gap">
-    <div class="sec-title">学期の設定</div>
+    <div class="sec-title"><i class="fas fa-layer-group fa-fw"></i> 学期の設定</div>
     <div class="crud-list" id="termList"></div>
-    <button class="btn btn-add" id="addTermBtn">＋ 学期を追加</button>
+    <button class="btn btn-add" id="addTermBtn"><i class="fas fa-plus"></i> 学期を追加</button>
   </div>
   <div class="sec-gap">
-    <div class="sec-title">レベルの設定</div>
+    <div class="sec-title"><i class="fas fa-signal fa-fw"></i> レベルの設定</div>
     <div class="crud-list" id="levelList"></div>
-    <button class="btn btn-add" id="addLevelBtn">＋ レベルを追加</button>
+    <button class="btn btn-add" id="addLevelBtn"><i class="fas fa-plus"></i> レベルを追加</button>
   </div>
-  <button class="btn btn-navy btn-save" id="saveContentBtn">保存する</button>
+  <button class="btn btn-navy btn-save" id="saveContentBtn"><i class="fas fa-floppy-disk"></i> 保存する</button>
   <div id="contentStatus" style="margin-top:10px;font-size:.75rem;color:var(--muted);text-align:center;min-height:18px;"></div>
 </div>
 
 <!-- Tab2: R2設定 -->
 <div class="tab-panel" id="t2">
   <div class="form-row">
-    <label class="form-label">R2 ベースURL（公開URL）</label>
+    <label class="form-label"><i class="fas fa-link fa-fw"></i> R2 ベースURL（公開URL）</label>
     <input class="form-input" id="r2BaseUrl" type="url" placeholder="https://pub-xxxx.r2.dev">
     <span class="form-hint">音声ファイルの公開ベースURL</span>
   </div>
   <div class="form-row">
-    <label class="form-label">Account ID</label>
+    <label class="form-label"><i class="fas fa-id-card fa-fw"></i> Account ID</label>
     <input class="form-input" id="r2AccountId" type="text" placeholder="Cloudflare Account ID">
   </div>
   <div class="form-row">
-    <label class="form-label">Access Key ID</label>
+    <label class="form-label"><i class="fas fa-key fa-fw"></i> Access Key ID</label>
     <input class="form-input" id="r2AccessKeyId" type="password" placeholder="R2 Access Key ID">
   </div>
   <div class="form-row">
-    <label class="form-label">Secret Access Key</label>
+    <label class="form-label"><i class="fas fa-lock fa-fw"></i> Secret Access Key</label>
     <input class="form-input" id="r2SecretKey" type="password" placeholder="R2 Secret Access Key">
   </div>
   <div class="form-row">
-    <label class="form-label">バケット名</label>
+    <label class="form-label"><i class="fas fa-database fa-fw"></i> バケット名</label>
     <input class="form-input" id="r2Bucket" type="text" value="textaudio">
   </div>
   <div class="form-row">
-    <label class="form-label">Worker URL <span style="font-weight:400;color:var(--muted)">（アップロード用・任意）</span></label>
+    <label class="form-label"><i class="fas fa-bolt fa-fw"></i> Worker URL <span style="font-weight:400;color:var(--muted)">（アップロード用・任意）</span></label>
     <input class="form-input" id="r2WorkerUrl" type="url" placeholder="https://textaudio-upload.xxxxx.workers.dev">
     <div class="form-hint">Cloudflare Worker 経由でアップロードする場合に入力。設定すると AWS 署名不要になります。</div>
   </div>
   <div class="form-row">
-    <label class="form-label">サイトURL <span style="font-weight:400;color:var(--muted)">（QRコード用）</span></label>
+    <label class="form-label"><i class="fas fa-globe fa-fw"></i> サイトURL <span style="font-weight:400;color:var(--muted)">（QRコード用）</span></label>
     <input class="form-input" id="siteUrl" type="url" placeholder="https://audio.lrnr.jp">
     <div class="form-hint">QRコードに埋め込むサイトのベースURL。未設定の場合はデフォルト値を使用。</div>
   </div>
   <div style="display:flex;gap:10px;margin-top:4px;">
-    <button class="btn btn-ghost" id="testConnBtn" style="flex:1;height:44px;">接続テスト</button>
-    <button class="btn btn-navy btn-save" id="saveR2Btn" style="flex:2;">保存する</button>
+    <button class="btn btn-ghost" id="testConnBtn" style="flex:1;height:44px;"><i class="fas fa-plug fa-fw"></i> 接続テスト</button>
+    <button class="btn btn-navy btn-save" id="saveR2Btn" style="flex:2;"><i class="fas fa-floppy-disk fa-fw"></i> 保存する</button>
   </div>
 </div>
 
@@ -222,7 +222,7 @@
       <div style="font-size:.7rem;color:var(--muted);margin-bottom:2px;">R2 APIエンドポイント</div>
       <div id="r2ApiUrlDisplay" style="font-size:.75rem;font-family:monospace;color:var(--primary);word-break:break-all;">—</div>
     </div>
-    <button class="btn btn-ghost" id="testUploadApiBtn" style="flex-shrink:0;height:36px;font-size:.78rem;">接続テスト</button>
+    <button class="btn btn-ghost" id="testUploadApiBtn" style="flex-shrink:0;height:36px;font-size:.78rem;"><i class="fas fa-plug fa-fw"></i> 接続テスト</button>
   </div>
   <div class="file-drop" id="fileDrop">
     <div>タップまたはドラッグでMP3を選択</div>
@@ -236,7 +236,7 @@
         <tbody id="previewBody"></tbody>
       </table>
     </div>
-    <button class="btn btn-navy btn-save" id="uploadBtn">アップロード開始</button>
+    <button class="btn btn-navy btn-save" id="uploadBtn"><i class="fas fa-cloud-arrow-up fa-fw"></i> アップロード開始</button>
     <div id="uploadProgress" style="display:none;margin-top:14px;">
       <div class="progress-wrap"><div class="progress-bar" id="progressBar" style="width:0"></div></div>
       <div class="progress-text" id="progressText">0 / 0</div>
@@ -252,7 +252,7 @@
     <select id="clLevel" style="flex:1 1 calc(33% - 8px);min-width:100px;height:38px;padding:0 8px;border:1px solid var(--border);border-radius:8px;font-size:.8rem;background:#fff;"></select>
   </div>
   <div class="cl-scroll"><div id="contentListTable"><div class="msg-c">読み込み中…</div></div></div>
-  <button class="btn btn-navy btn-save" id="saveTitlesBtn" style="margin-top:14px;">タイトルを保存する</button>
+  <button class="btn btn-navy btn-save" id="saveTitlesBtn" style="margin-top:14px;"><i class="fas fa-floppy-disk fa-fw"></i> タイトルを保存する</button>
 </div>
 
 <!-- Player overlay -->
@@ -474,10 +474,10 @@ function renderYearList() {
     const div = makeCrudItem(
       `<div class="crud-field wide"><label>表示名</label><input type="text" value="${esc(y.name)}" data-field="name" data-arr="years" data-idx="${i}"></div>
        <div class="crud-field wide"><label>タグ（英字）</label><input type="text" value="${esc(y.tag)}" data-field="tag" data-arr="years" data-idx="${i}"></div>`,
-      `<button class="btn ${isDef?'btn-navy':'btn-ghost'}" style="height:32px;padding:0 10px;font-size:.75rem;" onclick="setDefault('years','${y.id}')">${isDef?'★ デフォルト':'デフォルト'}</button>
-       <button class="btn btn-ghost" style="height:32px;padding:0 10px;font-size:.75rem;" onclick="moveArr('years',${i},-1,renderYearList)" ${i===0?'disabled':''}>↑</button>
-       <button class="btn btn-ghost" style="height:32px;padding:0 10px;font-size:.75rem;" onclick="moveArr('years',${i},1,renderYearList)" ${i===cfg.years.length-1?'disabled':''}>↓</button>
-       <button class="btn btn-red"   style="height:32px;padding:0 10px;font-size:.75rem;" onclick="delArr('years',${i},renderYearList)">削除</button>`
+      `<button class="btn ${isDef?'btn-navy':'btn-ghost'}" style="height:32px;width:32px;padding:0;font-size:.9rem;" title="${isDef?'デフォルト（設定中）':'デフォルトに設定'}" onclick="setDefault('years','${y.id}')"><i class="${isDef?'fas':'far'} fa-star"></i></button>
+       <button class="btn btn-ghost" style="height:32px;width:32px;padding:0;font-size:.9rem;" title="上へ" onclick="moveArr('years',${i},-1,renderYearList)" ${i===0?'disabled':''}><i class="fas fa-chevron-up"></i></button>
+       <button class="btn btn-ghost" style="height:32px;width:32px;padding:0;font-size:.9rem;" title="下へ" onclick="moveArr('years',${i},1,renderYearList)" ${i===cfg.years.length-1?'disabled':''}><i class="fas fa-chevron-down"></i></button>
+       <button class="btn btn-red"   style="height:32px;width:32px;padding:0;font-size:.9rem;" title="削除" onclick="delArr('years',${i},renderYearList)"><i class="fas fa-trash"></i></button>`
     );
     div.querySelectorAll('input').forEach(attachCrudInput);
     el.appendChild(div);
@@ -498,10 +498,10 @@ function renderTermList() {
       `<div class="crud-field wide"><label>表示名</label><input type="text" value="${esc(t.name)}" data-field="name" data-arr="terms" data-idx="${i}"></div>
        <div class="crud-field wide"><label>タグ（英字）</label><input type="text" value="${esc(t.tag)}" data-field="tag" data-arr="terms" data-idx="${i}"></div>
        <div class="crud-field narrow"><label>講数</label><input type="number" min="1" value="${t.lessons}" data-field="lessons" data-arr="terms" data-idx="${i}"></div>`,
-      `<button class="btn ${isDef?'btn-navy':'btn-ghost'}" style="height:32px;padding:0 10px;font-size:.75rem;" onclick="setDefault('terms','${t.id}')">${isDef?'★ デフォルト':'デフォルト'}</button>
-       <button class="btn btn-ghost" style="height:32px;padding:0 10px;font-size:.75rem;" onclick="moveArr('terms',${i},-1,renderTermList)" ${i===0?'disabled':''}>↑</button>
-       <button class="btn btn-ghost" style="height:32px;padding:0 10px;font-size:.75rem;" onclick="moveArr('terms',${i},1,renderTermList)" ${i===cfg.terms.length-1?'disabled':''}>↓</button>
-       <button class="btn btn-red"   style="height:32px;padding:0 10px;font-size:.75rem;" onclick="delArr('terms',${i},renderTermList)">削除</button>`
+      `<button class="btn ${isDef?'btn-navy':'btn-ghost'}" style="height:32px;width:32px;padding:0;font-size:.9rem;" title="${isDef?'デフォルト（設定中）':'デフォルトに設定'}" onclick="setDefault('terms','${t.id}')"><i class="${isDef?'fas':'far'} fa-star"></i></button>
+       <button class="btn btn-ghost" style="height:32px;width:32px;padding:0;font-size:.9rem;" title="上へ" onclick="moveArr('terms',${i},-1,renderTermList)" ${i===0?'disabled':''}><i class="fas fa-chevron-up"></i></button>
+       <button class="btn btn-ghost" style="height:32px;width:32px;padding:0;font-size:.9rem;" title="下へ" onclick="moveArr('terms',${i},1,renderTermList)" ${i===cfg.terms.length-1?'disabled':''}><i class="fas fa-chevron-down"></i></button>
+       <button class="btn btn-red"   style="height:32px;width:32px;padding:0;font-size:.9rem;" title="削除" onclick="delArr('terms',${i},renderTermList)"><i class="fas fa-trash"></i></button>`
     );
     div.querySelectorAll('input').forEach(attachCrudInput);
     el.appendChild(div);
@@ -521,10 +521,10 @@ function renderLevelList() {
     const div = makeCrudItem(
       `<div class="crud-field wide"><label>表示名</label><input type="text" value="${esc(l.name)}" data-field="name" data-arr="levels" data-idx="${i}"></div>
        <div class="crud-field wide"><label>タグ（英字）</label><input type="text" value="${esc(l.tag)}" data-field="tag" data-arr="levels" data-idx="${i}"></div>`,
-      `<button class="btn ${isDef?'btn-navy':'btn-ghost'}" style="height:32px;padding:0 10px;font-size:.75rem;" onclick="setDefault('levels','${l.id}')">${isDef?'★ デフォルト':'デフォルト'}</button>
-       <button class="btn btn-ghost" style="height:32px;padding:0 10px;font-size:.75rem;" onclick="moveArr('levels',${i},-1,renderLevelList)" ${i===0?'disabled':''}>↑</button>
-       <button class="btn btn-ghost" style="height:32px;padding:0 10px;font-size:.75rem;" onclick="moveArr('levels',${i},1,renderLevelList)" ${i===cfg.levels.length-1?'disabled':''}>↓</button>
-       <button class="btn btn-red"   style="height:32px;padding:0 10px;font-size:.75rem;" onclick="delArr('levels',${i},renderLevelList)">削除</button>`
+      `<button class="btn ${isDef?'btn-navy':'btn-ghost'}" style="height:32px;width:32px;padding:0;font-size:.9rem;" title="${isDef?'デフォルト（設定中）':'デフォルトに設定'}" onclick="setDefault('levels','${l.id}')"><i class="${isDef?'fas':'far'} fa-star"></i></button>
+       <button class="btn btn-ghost" style="height:32px;width:32px;padding:0;font-size:.9rem;" title="上へ" onclick="moveArr('levels',${i},-1,renderLevelList)" ${i===0?'disabled':''}><i class="fas fa-chevron-up"></i></button>
+       <button class="btn btn-ghost" style="height:32px;width:32px;padding:0;font-size:.9rem;" title="下へ" onclick="moveArr('levels',${i},1,renderLevelList)" ${i===cfg.levels.length-1?'disabled':''}><i class="fas fa-chevron-down"></i></button>
+       <button class="btn btn-red"   style="height:32px;width:32px;padding:0;font-size:.9rem;" title="削除" onclick="delArr('levels',${i},renderLevelList)"><i class="fas fa-trash"></i></button>`
     );
     div.querySelectorAll('input').forEach(attachCrudInput);
     el.appendChild(div);
