@@ -134,7 +134,7 @@
 <header class="app-header">
   <a href="../">←</a>
   <span class="app-title">設定</span>
-  <span id="versionBadge" style="margin-left:auto;font-size:.7rem;opacity:.6;font-weight:400;">v2026-05-27b</span>
+  <span id="versionBadge" style="margin-left:auto;font-size:.7rem;opacity:.6;font-weight:400;">v2026-05-28a</span>
 </header>
 
 <nav class="tab-nav">
@@ -436,6 +436,9 @@ function persistLocal() {
     defaultYear: cfg.defaultYear, defaultTerm: cfg.defaultTerm, defaultLevel: cfg.defaultLevel,
     lessonTitles: cfg.lessonTitles
   }));
+  // Also write siteTitle to a quick-access key so the user page can apply it immediately
+  if (cfg.siteTitle) localStorage.setItem('dke_site_title', cfg.siteTitle);
+  else localStorage.removeItem('dke_site_title');
 }
 
 function settingsJson() {
@@ -1166,7 +1169,7 @@ if (!lsAvailable) {
   banner.innerHTML = '⚠️ LocalStorageが無効です。プライベートブラウジングをオフにするか、ブラウザのストレージ設定を確認してください。設定は保存されません。';
   document.body.appendChild(banner);
 }
-document.getElementById('versionBadge').textContent = `v2026-05-27b ${lsAvailable ? '💾' : '🚫LocalStorage'}`;
+document.getElementById('versionBadge').textContent = `v2026-05-28a ${lsAvailable ? '💾' : '🚫LocalStorage'}`;
 
 /* ── Debug helper ── */
 window.debugLS = function() {

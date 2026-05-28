@@ -90,6 +90,16 @@
   <span class="app-title" id="appTitle">DKE Medical English</span>
   <span class="badge" id="completionBadge">完了: 0 / 0</span>
 </header>
+<script>
+// Apply siteTitle immediately from localStorage (before async loadCfg) to avoid flash of default title
+(function(){
+  try {
+    const t = localStorage.getItem('dke_site_title') ||
+              (JSON.parse(localStorage.getItem('dke_settings')||'{}') || {}).siteTitle || '';
+    if (t) { document.getElementById('appTitle').textContent = t; document.title = t; }
+  } catch(e) {}
+})();
+</script>
 
 <div class="filter-bar">
   <select id="filterYear"></select>
@@ -184,7 +194,7 @@ async function loadCfg() {
     defaultTerm:  local?.defaultTerm  || '',
     defaultLevel: local?.defaultLevel || '',
     lessonTitles: local?.lessonTitles || {},
-    siteTitle:    local?.siteTitle    || '',
+    siteTitle:    local?.siteTitle    || localStorage.getItem('dke_site_title') || '',
   };
   // Overlay with R2 data (only non-empty values override)
   for (const url of fetchUrls) {
@@ -404,7 +414,10 @@ async function init() {
   loadDone();
   try { await loadCfg(); }
   catch { document.getElementById('tableContainer').innerHTML = '<div class="msg-c err">コンテンツを読み込めませんでした</div>'; return; }
-  if (cfg.siteTitle) document.getElementById('appTitle').textContent = cfg.siteTitle;
+  if (cfg.siteTitle) {
+    document.getElementById('appTitle').textContent = cfg.siteTitle;
+    document.title = cfg.siteTitle;
+  }
   populateFilters(); render(); handleParams();
   document.getElementById('filterYear').addEventListener('change',  () => { saveFilter(); render(); });
   document.getElementById('filterTerm').addEventListener('change',  () => { saveFilter(); render(); });
