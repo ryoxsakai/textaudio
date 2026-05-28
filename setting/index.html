@@ -633,9 +633,15 @@ document.getElementById('saveR2Btn').addEventListener('click', async () => {
   }
   loadR2Fields();
   renderYearList(); renderTermList(); renderLevelList();
-  toast(loaded
-    ? 'R2設定を保存し、コンテンツ設定をR2から復元しました'
-    : 'R2設定をLocalStorageに保存しました（R2のコンテンツ設定は空 — コンテンツ設定タブで再入力してください）');
+  // Also upload settings.json to R2 now that we have credentials/URL
+  try {
+    await saveSettingsJson();
+    toast(loaded ? 'R2設定を保存し、コンテンツ設定をR2から復元・再保存しました' : 'R2設定を保存し、settings.jsonをR2にアップロードしました');
+  } catch (e) {
+    toast(loaded
+      ? 'R2設定をLocalStorageに保存しました（R2への書き込み失敗: ' + e.message + '）'
+      : 'R2設定をLocalStorageに保存しました（R2未設定またはエラー）');
+  }
 });
 document.getElementById('testConnBtn').addEventListener('click', async () => {
   const url = document.getElementById('r2BaseUrl').value.trim().replace(/\/$/, '');

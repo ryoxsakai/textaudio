@@ -187,6 +187,7 @@ async function loadCfg() {
   // Apply localStorage as starting point
   cfg = {
     r2BaseUrl:    local?.r2BaseUrl    || DEFAULTS.r2BaseUrl,
+    r2WorkerUrl:  local?.r2WorkerUrl  || '',
     years:        local?.years?.length  ? local.years  : [...DEFAULTS.years],
     terms:        local?.terms?.length  ? local.terms  : [...DEFAULTS.terms],
     levels:       local?.levels?.length ? local.levels : [...DEFAULTS.levels],
@@ -196,7 +197,7 @@ async function loadCfg() {
     lessonTitles: local?.lessonTitles || {},
     siteTitle:    local?.siteTitle    || localStorage.getItem('dke_site_title') || '',
   };
-  // Overlay with R2 data (only non-empty values override)
+  // Overlay with R2 data — use same guards as settings page to avoid stale overrides
   for (const url of fetchUrls) {
     try {
       const r = await fetch(`${url}/settings.json`);
@@ -205,12 +206,13 @@ async function loadCfg() {
       if (j.years?.length)  cfg.years  = j.years;
       if (j.terms?.length)  cfg.terms  = j.terms;
       if (j.levels?.length) cfg.levels = j.levels;
-      if (j.r2BaseUrl)    cfg.r2BaseUrl    = j.r2BaseUrl;
+      if (j.r2BaseUrl   && !local?.r2BaseUrl)   cfg.r2BaseUrl   = j.r2BaseUrl;
+      if (j.r2WorkerUrl && !local?.r2WorkerUrl) cfg.r2WorkerUrl = j.r2WorkerUrl;
       if (j.defaultYear)  cfg.defaultYear  = j.defaultYear;
       if (j.defaultTerm)  cfg.defaultTerm  = j.defaultTerm;
       if (j.defaultLevel) cfg.defaultLevel = j.defaultLevel;
       if (j.lessonTitles && Object.keys(j.lessonTitles).length) cfg.lessonTitles = j.lessonTitles;
-      if (j.siteTitle) cfg.siteTitle = j.siteTitle;
+      if (j.siteTitle && !local?.siteTitle) cfg.siteTitle = j.siteTitle;
       break;
     } catch {}
   }
@@ -225,7 +227,12 @@ function allRows() {
           rows.push({ y, t, l, n, key: mk(y.id, t.id, l.id, n) });
   return rows;
 }
-function audioUrl(y, t, l, n) { return `${cfg.r2BaseUrl}/${y.tag}/${t.tag}/${l.tag}/lesson${n}.mp3`; }
+function audioPath(y, t, l, n) { return `${y.tag}/${t.tag}/${l.tag}/lesson${n}.mp3`; }
+function audioUrl(y, t, l, n) { return `${cfg.r2BaseUrl}/${audioPath(y, t, l, n)}`; }
+function audioUrlWorker(y, t, l, n) {
+  const base = cfg.r2WorkerUrl || cfg.r2BaseUrl;
+  return `${base}/${audioPath(y, t, l, n)}`;
+}
 
 function updateBadge() {
   const rows = allRows();
@@ -259,12 +266,19 @@ function render() {
   con.innerHTML = h + '</tbody></table>';
   if (cfg.r2BaseUrl) {
     rows.forEach(r => {
-      fetch(audioUrl(r.y, r.t, r.l, r.n), { method: 'HEAD' }).then(res => {
-        if (res.ok) {
-          const btn = document.getElementById(`play-${r.key}`);
-          if (btn) { btn.disabled = false; btn.style.opacity = ''; }
-        }
-      }).catch(() => {});
+      const enablePlay = () => {
+        const btn = document.getElementById(`play-${r.key}`);
+        if (btn) { btn.disabled = false; btn.style.opacity = ''; }
+      };
+      // Try r2BaseUrl first; if it fails or has CORS issues, fall back to Worker URL
+      fetch(audioUrl(r.y, r.t, r.l, r.n), { method: 'HEAD' })
+        .then(res => { if (res.ok) enablePlay(); else throw new Error(); })
+        .catch(() => {
+          const wUrl = audioUrlWorker(r.y, r.t, r.l, r.n);
+          if (wUrl !== audioUrl(r.y, r.t, r.l, r.n)) {
+            fetch(wUrl, { method: 'HEAD' }).then(res => { if (res.ok) enablePlay(); }).catch(() => {});
+          }
+        });
     });
   }
 }
@@ -384,7 +398,7 @@ function openPlayer(yId, tId, lId, n) {
   document.getElementById('playerTitle').innerHTML = lessonTitle
     ? `${esc(mainLabel)}<br><span style="font-size:.82rem;font-weight:400;color:var(--muted);">${esc(lessonTitle)}</span>`
     : esc(mainLabel);
-  audio.src = audioUrl(y, t, l, n);
+  audio.src = audioUrlWorker(y, t, l, n);
   audio.currentTime = 0;
   setPI(false);
   document.getElementById('durTime').textContent = '0:00';
@@ -405,7 +419,8 @@ function handleParams() {
   const t = cfg.terms.find(x => x.tag === tTag);
   const l = cfg.levels.find(x => x.tag === lTag);
   if (!y || !t || !l || n < 1 || n > t.lessons) return;
-  fetch(audioUrl(y, t, l, n), { method: 'HEAD' })
+  const wUrl = audioUrlWorker(y, t, l, n);
+  fetch(wUrl, { method: 'HEAD' })
     .then(res => { if (res.ok) openPlayer(y.id, t.id, l.id, n); })
     .catch(() => {});
 }
