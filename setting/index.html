@@ -1186,7 +1186,8 @@ function openPlayer(yId, tId, lId, n) {
   requestAnimationFrame(() => {
     resizeVizCanvas();
     resizeWaveCanvas();
-    loadWaveform(audio.src, mk(yId, tId, lId, n));
+    const wfBase = (cfg.r2WorkerUrl || cfg.r2BaseUrl).replace(/\/$/, '');
+    loadWaveform(`${wfBase}/${y.tag}/${t.tag}/${l.tag}/lesson${n}.mp3`, mk(yId, tId, lId, n));
   });
 }
 function closePlayer() {
