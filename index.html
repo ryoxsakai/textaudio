@@ -108,6 +108,9 @@
     .lesson-nav .ctrl-btn { min-width: 40px; min-height: 40px; font-size: 1.15rem; }
     .nav-label { font-size: .76rem; color: var(--muted); font-weight: 600; letter-spacing: .04em; }
 
+    /* ── Visualizer ── */
+    #vizCanvas { width: 100%; height: 68px; display: block; border-radius: 10px; background: var(--primary-lt); margin-bottom: 16px; }
+
     /* ── Mark done ── */
     .btn-mark-done { width: 100%; height: 48px; border: none; border-radius: 14px; font-size: .9rem; font-weight: 700; cursor: pointer; background: var(--green); color: #fff; -webkit-tap-highlight-color: transparent; transition: opacity .15s; display: flex; align-items: center; justify-content: center; gap: 8px; }
     .btn-mark-done:active { opacity: .8; }
@@ -176,6 +179,7 @@
       <div class="prog-thumb" id="progThumb"></div>
     </div>
     <div class="time-row"><span id="curTime">0:00</span><span id="durTime">0:00</span></div>
+    <canvas id="vizCanvas"></canvas>
     <div class="ctrl-row">
       <button class="ctrl-btn" id="btnBack" title="10秒戻る"><i class="fas fa-rotate-left"></i></button>
       <button class="ctrl-btn ctrl-btn-main" id="btnPlay"><i class="fas fa-play" id="iconPlay"></i></button>
@@ -378,14 +382,17 @@ function updProg() {
 }
 audio.addEventListener('timeupdate', updProg);
 audio.addEventListener('loadedmetadata', () => { document.getElementById('durTime').textContent = fmt(audio.duration); updProg(); });
-audio.addEventListener('ended', () => setPI(false));
+audio.addEventListener('ended', () => { setPI(false); stopViz(); });
 
 function setPI(playing) {
   const icon = document.getElementById('iconPlay');
   icon.className = playing ? 'fas fa-pause' : 'fas fa-play';
 }
 document.getElementById('btnPlay').addEventListener('click', () => {
-  if (audio.paused) { audio.play(); setPI(true); } else { audio.pause(); setPI(false); }
+  initAudioCtx();
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  if (audio.paused) { audio.play(); setPI(true); startViz(); }
+  else              { audio.pause(); setPI(false); stopViz(); }
 });
 document.getElementById('btnBack').addEventListener('click', () => { audio.currentTime = Math.max(0, audio.currentTime - 10); });
 document.getElementById('btnFwd').addEventListener('click',  () => { audio.currentTime = Math.min(audio.duration || 0, audio.currentTime + 10); });
@@ -450,8 +457,88 @@ function openPlayer(yId, tId, lId, n) {
   setSpeed(1);
   refreshMarkBtn();
   overlay.classList.add('open');
+  requestAnimationFrame(resizeVizCanvas);
 }
-function closePlayer() { audio.pause(); overlay.classList.remove('open'); cur = null; }
+// ─── Visualizer ───────────────────────────────────────────
+let audioCtx = null, analyser = null, vizRaf = null;
+
+function initAudioCtx() {
+  if (audioCtx) return;
+  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  analyser = audioCtx.createAnalyser();
+  analyser.fftSize = 256;
+  analyser.smoothingTimeConstant = 0.82;
+  const src = audioCtx.createMediaElementSource(audio);
+  src.connect(analyser);
+  analyser.connect(audioCtx.destination);
+}
+
+function resizeVizCanvas() {
+  const c = document.getElementById('vizCanvas');
+  if (!c) return;
+  const dpr = window.devicePixelRatio || 1;
+  c.width  = c.clientWidth  * dpr;
+  c.height = c.clientHeight * dpr;
+}
+
+function drawViz() {
+  const c = document.getElementById('vizCanvas');
+  if (!c || !analyser) return;
+  const dpr = window.devicePixelRatio || 1;
+  const W = c.clientWidth, H = c.clientHeight;
+  const ctx2 = c.getContext('2d');
+
+  const bufLen = analyser.frequencyBinCount;
+  const data = new Uint8Array(bufLen);
+  analyser.getByteFrequencyData(data);
+
+  ctx2.clearRect(0, 0, c.width, c.height);
+  ctx2.save();
+  ctx2.scale(dpr, dpr);
+
+  const bars = 40, gap = 3;
+  const barW = (W - gap * (bars - 1)) / bars;
+  const step = Math.floor(bufLen / bars);
+  const usableH = H - 4;
+
+  const grad = ctx2.createLinearGradient(0, H, 0, 0);
+  grad.addColorStop(0, '#5B8DEF');
+  grad.addColorStop(1, '#8B7FE8');
+  ctx2.fillStyle = grad;
+
+  for (let i = 0; i < bars; i++) {
+    let sum = 0;
+    for (let j = 0; j < step; j++) sum += data[i * step + j];
+    const val = (sum / step) / 255;
+    const barH = Math.max(3, val * usableH);
+    const x = i * (barW + gap);
+    const y = H - barH;
+    const r = Math.min(3, barW / 2);
+    ctx2.beginPath();
+    ctx2.moveTo(x + r, y);
+    ctx2.lineTo(x + barW - r, y);
+    ctx2.quadraticCurveTo(x + barW, y, x + barW, y + r);
+    ctx2.lineTo(x + barW, y + barH);
+    ctx2.lineTo(x, y + barH);
+    ctx2.lineTo(x, y + r);
+    ctx2.quadraticCurveTo(x, y, x + r, y);
+    ctx2.closePath();
+    ctx2.fill();
+  }
+
+  ctx2.restore();
+  vizRaf = requestAnimationFrame(drawViz);
+}
+
+function startViz() { if (!analyser || vizRaf) return; drawViz(); }
+function stopViz() {
+  if (vizRaf) { cancelAnimationFrame(vizRaf); vizRaf = null; }
+  const c = document.getElementById('vizCanvas');
+  if (c) c.getContext('2d').clearRect(0, 0, c.width, c.height);
+}
+// ──────────────────────────────────────────────────────────
+
+function closePlayer() { audio.pause(); stopViz(); overlay.classList.remove('open'); cur = null; }
 document.getElementById('btnClose').addEventListener('click', closePlayer);
 
 function getCurIdx() {
