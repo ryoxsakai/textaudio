@@ -390,9 +390,7 @@ function setPI(playing) {
   const icon = document.getElementById('iconPlay');
   icon.className = playing ? 'fas fa-pause' : 'fas fa-play';
 }
-document.getElementById('btnPlay').addEventListener('click', async () => {
-  initAudioCtx();
-  try { if (audioCtx && audioCtx.state === 'suspended') await audioCtx.resume(); } catch(e) {}
+document.getElementById('btnPlay').addEventListener('click', () => {
   if (audio.paused) { audio.play().catch(() => {}); setPI(true); startViz(); }
   else              { audio.pause(); setPI(false); stopViz(); }
 });
@@ -465,25 +463,12 @@ function openPlayer(yId, tId, lId, n) {
     loadWaveform(audio.src, mk(yId, tId, lId, n));
   });
 }
-// ─── Visualizer ───────────────────────────────────────────
-let audioCtx = null, analyser = null, vizRaf = null;
-
-function initAudioCtx() {
-  if (audioCtx) return;
-  try {
-    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    analyser = audioCtx.createAnalyser();
-    analyser.fftSize = 256;
-    analyser.smoothingTimeConstant = 0.82;
-    const src = audioCtx.createMediaElementSource(audio);
-    src.connect(analyser);
-    analyser.connect(audioCtx.destination);
-  } catch(e) {
-    // Visualizer unavailable (e.g. CORS); audio still plays normally
-    audioCtx = null;
-    analyser = null;
-  }
-}
+// ─── Visualizer (PCM + FFT, iOS-safe) ─────────────────────
+// Driven by the decoded PCM buffer synced to playback time, so it works
+// on iOS Safari where createMediaElementSource feeds the analyser only
+// zeros. The bottom canvas shows a live frequency spectrum.
+const VIZ_BARS = 40, FFT_N = 512;
+let vizRaf = null, vizSmooth = new Float32Array(VIZ_BARS), vizPeak = 0.0001;
 
 function resizeVizCanvas() {
   const c = document.getElementById('vizCanvas');
@@ -493,39 +478,82 @@ function resizeVizCanvas() {
   c.height = c.clientHeight * dpr;
 }
 
+// In-place iterative radix-2 FFT
+function fftMag(re, im) {
+  const n = re.length;
+  for (let i = 1, j = 0; i < n; i++) {
+    let bit = n >> 1;
+    for (; j & bit; bit >>= 1) j ^= bit;
+    j ^= bit;
+    if (i < j) { const tr = re[i]; re[i] = re[j]; re[j] = tr; const ti = im[i]; im[i] = im[j]; im[j] = ti; }
+  }
+  for (let len = 2; len <= n; len <<= 1) {
+    const ang = -2 * Math.PI / len, wre = Math.cos(ang), wim = Math.sin(ang);
+    for (let i = 0; i < n; i += len) {
+      let cre = 1, cim = 0;
+      for (let k = 0; k < len >> 1; k++) {
+        const a = i + k, b = a + (len >> 1);
+        const tre = re[b] * cre - im[b] * cim;
+        const tim = re[b] * cim + im[b] * cre;
+        re[b] = re[a] - tre; im[b] = im[a] - tim;
+        re[a] += tre; im[a] += tim;
+        const ncre = cre * wre - cim * wim;
+        cim = cre * wim + cim * wre; cre = ncre;
+      }
+    }
+  }
+}
+
 function drawViz() {
   const c = document.getElementById('vizCanvas');
-  if (!c || !analyser) return;
+  if (!c) { vizRaf = null; return; }
   const dpr = window.devicePixelRatio || 1;
   const W = c.clientWidth, H = c.clientHeight;
   const ctx2 = c.getContext('2d');
-
-  const bufLen = analyser.frequencyBinCount;
-  const data = new Uint8Array(bufLen);
-  analyser.getByteFrequencyData(data);
-
   ctx2.clearRect(0, 0, c.width, c.height);
   ctx2.save();
   ctx2.scale(dpr, dpr);
 
-  const bars = 40, gap = 3;
-  const barW = (W - gap * (bars - 1)) / bars;
-  const step = Math.floor(bufLen / bars);
-  const usableH = H - 4;
+  const mags = new Float32Array(VIZ_BARS);
+  if (currentPCM && audio.duration && !audio.paused) {
+    const re = new Float32Array(FFT_N), im = new Float32Array(FFT_N);
+    const start = Math.floor(audio.currentTime * currentPCM.sampleRate);
+    const d = currentPCM.data;
+    for (let i = 0; i < FFT_N; i++) {
+      const s = d[start + i] || 0;
+      const w = 0.5 * (1 - Math.cos(2 * Math.PI * i / (FFT_N - 1))); // Hann
+      re[i] = s * w;
+    }
+    fftMag(re, im);
+    const halfN = FFT_N >> 1;
+    // Group bins into bars on a roughly log scale (emphasize low/mid freqs)
+    let frameMax = 0;
+    for (let b = 0; b < VIZ_BARS; b++) {
+      const lo = Math.floor(Math.pow(b / VIZ_BARS, 1.6) * halfN);
+      const hi = Math.max(lo + 1, Math.floor(Math.pow((b + 1) / VIZ_BARS, 1.6) * halfN));
+      let sum = 0, cnt = 0;
+      for (let k = lo; k < hi && k < halfN; k++) {
+        sum += Math.sqrt(re[k] * re[k] + im[k] * im[k]); cnt++;
+      }
+      const v = cnt ? sum / cnt : 0;
+      mags[b] = v;
+      if (v > frameMax) frameMax = v;
+    }
+    vizPeak = Math.max(vizPeak * 0.96, frameMax, 0.0001);
+  }
 
+  const usableH = H - 4;
+  const gap = 3, barW = (W - gap * (VIZ_BARS - 1)) / VIZ_BARS;
   const grad = ctx2.createLinearGradient(0, H, 0, 0);
   grad.addColorStop(0, '#5B8DEF');
   grad.addColorStop(1, '#8B7FE8');
   ctx2.fillStyle = grad;
 
-  for (let i = 0; i < bars; i++) {
-    let sum = 0;
-    for (let j = 0; j < step; j++) sum += data[i * step + j];
-    const val = (sum / step) / 255;
-    const barH = Math.max(3, val * usableH);
-    const x = i * (barW + gap);
-    const y = H - barH;
-    const r = Math.min(3, barW / 2);
+  for (let i = 0; i < VIZ_BARS; i++) {
+    const target = Math.min(1, mags[i] / vizPeak);
+    vizSmooth[i] += (target - vizSmooth[i]) * 0.35;
+    const barH = Math.max(3, vizSmooth[i] * usableH);
+    const x = i * (barW + gap), y = H - barH, r = Math.min(3, barW / 2);
     ctx2.beginPath();
     ctx2.moveTo(x + r, y);
     ctx2.lineTo(x + barW - r, y);
@@ -542,9 +570,10 @@ function drawViz() {
   vizRaf = requestAnimationFrame(drawViz);
 }
 
-function startViz() { if (!analyser || vizRaf) return; drawViz(); }
+function startViz() { if (vizRaf) return; drawViz(); }
 function stopViz() {
   if (vizRaf) { cancelAnimationFrame(vizRaf); vizRaf = null; }
+  vizSmooth.fill(0); vizPeak = 0.0001;
   const c = document.getElementById('vizCanvas');
   if (c) c.getContext('2d').clearRect(0, 0, c.width, c.height);
 }
@@ -553,6 +582,7 @@ function stopViz() {
 // ─── Static waveform (progress bar) ───────────────────────
 const waveformCache = {};
 let currentWaveform = null, currentWaveformKey = null;
+let currentPCM = null; // { data: Float32Array, sampleRate } for the live viz
 
 function resizeWaveCanvas() {
   const c = document.getElementById('waveCanvas');
@@ -606,34 +636,40 @@ function drawWaveform() {
 
 async function loadWaveform(url, key) {
   currentWaveformKey = key;
-  if (waveformCache[key]) { currentWaveform = waveformCache[key]; drawWaveform(); return; }
-  currentWaveform = null; drawWaveform();
+  currentPCM = null;
+  currentWaveform = waveformCache[key] || null;
+  drawWaveform();
   let decCtx;
   try { decCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e) { return; }
   try {
     const res = await fetch(url);
     const buf = await res.arrayBuffer();
     const decoded = await decCtx.decodeAudioData(buf);
-    decCtx.close();
-    const BARS = 60, ch = decoded.getChannelData(0);
-    const step = Math.floor(ch.length / BARS);
-    const wf = new Float32Array(BARS);
-    for (let i = 0; i < BARS; i++) {
-      let s = 0;
-      for (let j = 0; j < step; j++) s += ch[i * step + j] ** 2;
-      wf[i] = Math.sqrt(s / step);
+    const ch = decoded.getChannelData(0);
+    // Keep a copy of the PCM samples for the live (FFT) visualizer
+    if (currentWaveformKey === key) currentPCM = { data: ch.slice(0), sampleRate: decoded.sampleRate };
+    // Compute the static waveform bars if not already cached
+    if (!waveformCache[key]) {
+      const BARS = 60, step = Math.floor(ch.length / BARS);
+      const wf = new Float32Array(BARS);
+      for (let i = 0; i < BARS; i++) {
+        let s = 0;
+        for (let j = 0; j < step; j++) s += ch[i * step + j] ** 2;
+        wf[i] = Math.sqrt(s / step);
+      }
+      let mx = 0; for (let i = 0; i < BARS; i++) if (wf[i] > mx) mx = wf[i];
+      if (mx > 0) for (let i = 0; i < BARS; i++) wf[i] /= mx;
+      waveformCache[key] = wf;
     }
-    const mx = Math.max(...wf);
-    if (mx > 0) for (let i = 0; i < BARS; i++) wf[i] /= mx;
-    waveformCache[key] = wf;
-    if (currentWaveformKey === key) { currentWaveform = wf; drawWaveform(); }
+    if (currentWaveformKey === key) { currentWaveform = waveformCache[key]; drawWaveform(); }
+    decCtx.close();
   } catch(e) { try { decCtx.close(); } catch(_) {} }
 }
 // ──────────────────────────────────────────────────────────
 
 function closePlayer() {
   audio.pause(); stopViz();
-  currentWaveform = null; currentWaveformKey = null;
+  currentWaveform = null; currentWaveformKey = null; currentPCM = null;
   const wc = document.getElementById('waveCanvas');
   if (wc) wc.getContext('2d').clearRect(0, 0, wc.width, wc.height);
   overlay.classList.remove('open'); cur = null;
