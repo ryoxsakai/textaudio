@@ -110,10 +110,10 @@
     .pl-title { font-size: .95rem; font-weight: 700; color: var(--primary); line-height: 1.4; flex: 1; padding-right: 12px; }
     .btn-close { width: 30px; height: 30px; border: none; background: var(--primary-lt); border-radius: 50%; font-size: .82rem; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: var(--primary); }
     .prog-wrap { position: relative; height: 44px; display: flex; align-items: center; cursor: pointer; touch-action: none; user-select: none; }
-    .prog-track { position: absolute; left: 0; right: 0; height: 6px; background: #e2e6ea; border-radius: 3px; overflow: hidden; }
-    .prog-fill { height: 100%; width: 0; background: var(--grad); border-radius: 3px; }
-    .prog-thumb { position: absolute; width: 18px; height: 18px; background: var(--primary); border-radius: 50%; top: 50%; left: 0; transform: translate(-50%,-50%); box-shadow: 0 1px 4px rgba(74,134,200,.4); }
+    .wave-canvas { position: absolute; left: 0; width: 100%; height: 38px; top: 50%; transform: translateY(-50%); border-radius: 8px; background: var(--primary-lt); pointer-events: none; display: block; }
+    .prog-thumb { position: absolute; width: 18px; height: 18px; background: var(--primary); border-radius: 50%; top: 50%; left: 0; transform: translate(-50%,-50%); box-shadow: 0 1px 4px rgba(74,134,200,.4); z-index: 2; }
     .time-row { display: flex; justify-content: space-between; font-size: .75rem; color: var(--muted); margin-bottom: 16px; }
+    #vizCanvas { width: 100%; height: 68px; display: block; border-radius: 10px; background: var(--primary-lt); margin-bottom: 16px; }
     .ctrl-row { display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 16px; }
     .ctrl-btn { display: flex; align-items: center; justify-content: center; border: none; background: none; border-radius: 50%; min-width: 46px; min-height: 46px; cursor: pointer; color: var(--primary); font-size: 1.3rem; -webkit-tap-highlight-color: transparent; transition: background .15s; }
     .ctrl-btn:active { background: var(--primary-lt); }
@@ -260,12 +260,13 @@
       <div class="pl-title" id="playerTitle">-</div>
       <button class="btn-close" id="btnClose"><i class="fas fa-xmark"></i></button>
     </div>
-    <audio id="audio" preload="metadata"></audio>
+    <audio id="audio" preload="metadata" crossorigin="anonymous"></audio>
     <div class="prog-wrap" id="progWrap">
-      <div class="prog-track"><div class="prog-fill" id="progFill"></div></div>
+      <canvas id="waveCanvas" class="wave-canvas"></canvas>
       <div class="prog-thumb" id="progThumb"></div>
     </div>
     <div class="time-row"><span id="curTime">0:00</span><span id="durTime">0:00</span></div>
+    <canvas id="vizCanvas"></canvas>
     <div class="ctrl-row">
       <button class="ctrl-btn" id="btnBack" title="10秒戻る"><i class="fas fa-rotate-left"></i></button>
       <button class="ctrl-btn ctrl-btn-main" id="btnPlay"><i class="fas fa-play" id="iconPlay"></i></button>
@@ -994,20 +995,21 @@ let cur = null, settingsPlayerRows = [];
 function fmt(s) { return isFinite(s) ? Math.floor(s/60) + ':' + String(Math.floor(s%60)).padStart(2,'0') : '0:00'; }
 function updProg() {
   const p = audio.duration ? (audio.currentTime / audio.duration) * 100 : 0;
-  document.getElementById('progFill').style.width = p + '%';
   document.getElementById('progThumb').style.left = p + '%';
   document.getElementById('curTime').textContent = fmt(audio.currentTime);
 }
-audio.addEventListener('timeupdate', updProg);
-audio.addEventListener('loadedmetadata', () => { document.getElementById('durTime').textContent = fmt(audio.duration); updProg(); });
-audio.addEventListener('ended', () => setPI(false));
+audio.addEventListener('timeupdate', () => { updProg(); drawWaveform(); });
+audio.addEventListener('loadedmetadata', () => { document.getElementById('durTime').textContent = fmt(audio.duration); updProg(); drawWaveform(); });
+audio.addEventListener('seeked', drawWaveform);
+audio.addEventListener('ended', () => { setPI(false); stopViz(); });
 
 function setPI(playing) {
   const icon = document.getElementById('iconPlay');
   icon.className = playing ? 'fas fa-pause' : 'fas fa-play';
 }
 document.getElementById('btnPlay').addEventListener('click', () => {
-  if (audio.paused) { audio.play(); setPI(true); } else { audio.pause(); setPI(false); }
+  if (audio.paused) { audio.play().catch(() => {}); setPI(true); startViz(); }
+  else              { audio.pause(); setPI(false); stopViz(); }
 });
 document.getElementById('btnBack').addEventListener('click', () => { audio.currentTime = Math.max(0, audio.currentTime - 10); });
 document.getElementById('btnFwd').addEventListener('click',  () => { audio.currentTime = Math.min(audio.duration||0, audio.currentTime+10); });
@@ -1033,6 +1035,140 @@ function setSpeed(v) {
 }
 document.querySelectorAll('.btn-preset').forEach(b => b.addEventListener('click', () => setSpeed(parseFloat(b.dataset.speed))));
 
+// ─── Visualizer (PCM + FFT) ────────────────────────────────
+const VIZ_BARS = 40, FFT_N = 512;
+let vizRaf = null, vizSmooth = new Float32Array(VIZ_BARS), vizPeak = 0.0001;
+
+function resizeVizCanvas() {
+  const c = document.getElementById('vizCanvas');
+  if (!c) return;
+  const dpr = window.devicePixelRatio || 1;
+  c.width = c.clientWidth * dpr; c.height = c.clientHeight * dpr;
+}
+function fftMag(re, im) {
+  const n = re.length;
+  for (let i = 1, j = 0; i < n; i++) {
+    let bit = n >> 1;
+    for (; j & bit; bit >>= 1) j ^= bit;
+    j ^= bit;
+    if (i < j) { const tr=re[i];re[i]=re[j];re[j]=tr; const ti=im[i];im[i]=im[j];im[j]=ti; }
+  }
+  for (let len = 2; len <= n; len <<= 1) {
+    const ang = -2*Math.PI/len, wre=Math.cos(ang), wim=Math.sin(ang);
+    for (let i = 0; i < n; i += len) {
+      let cre=1, cim=0;
+      for (let k = 0; k < len>>1; k++) {
+        const a=i+k, b=a+(len>>1);
+        const tre=re[b]*cre-im[b]*cim, tim=re[b]*cim+im[b]*cre;
+        re[b]=re[a]-tre; im[b]=im[a]-tim; re[a]+=tre; im[a]+=tim;
+        const ncre=cre*wre-cim*wim; cim=cre*wim+cim*wre; cre=ncre;
+      }
+    }
+  }
+}
+function drawViz() {
+  const c = document.getElementById('vizCanvas');
+  if (!c) { vizRaf = null; return; }
+  const dpr=window.devicePixelRatio||1, W=c.clientWidth, H=c.clientHeight;
+  const ctx2=c.getContext('2d');
+  ctx2.clearRect(0,0,c.width,c.height); ctx2.save(); ctx2.scale(dpr,dpr);
+  const mags = new Float32Array(VIZ_BARS);
+  if (currentPCM && audio.duration && !audio.paused) {
+    const re=new Float32Array(FFT_N), im=new Float32Array(FFT_N);
+    const start=Math.floor(audio.currentTime*currentPCM.sampleRate), d=currentPCM.data;
+    for (let i=0;i<FFT_N;i++) { const s=d[start+i]||0, w=0.5*(1-Math.cos(2*Math.PI*i/(FFT_N-1))); re[i]=s*w; }
+    fftMag(re,im);
+    const halfN=FFT_N>>1; let frameMax=0;
+    for (let b=0;b<VIZ_BARS;b++) {
+      const lo=Math.floor(Math.pow(b/VIZ_BARS,1.6)*halfN), hi=Math.max(lo+1,Math.floor(Math.pow((b+1)/VIZ_BARS,1.6)*halfN));
+      let sum=0,cnt=0;
+      for (let k=lo;k<hi&&k<halfN;k++) { sum+=Math.sqrt(re[k]*re[k]+im[k]*im[k]); cnt++; }
+      const v=cnt?sum/cnt:0; mags[b]=v; if(v>frameMax) frameMax=v;
+    }
+    vizPeak=Math.max(vizPeak*0.96,frameMax,0.0001);
+  }
+  const usableH=H-4, gap=3, barW=(W-gap*(VIZ_BARS-1))/VIZ_BARS;
+  const grad=ctx2.createLinearGradient(0,H,0,0);
+  grad.addColorStop(0,'#5B8DEF'); grad.addColorStop(1,'#8B7FE8');
+  ctx2.fillStyle=grad;
+  for (let i=0;i<VIZ_BARS;i++) {
+    const target=Math.min(1,mags[i]/vizPeak);
+    vizSmooth[i]+=(target-vizSmooth[i])*0.35;
+    const barH=Math.max(3,vizSmooth[i]*usableH), x=i*(barW+gap), y=H-barH, r=Math.min(3,barW/2);
+    ctx2.beginPath();
+    ctx2.moveTo(x+r,y); ctx2.lineTo(x+barW-r,y); ctx2.quadraticCurveTo(x+barW,y,x+barW,y+r);
+    ctx2.lineTo(x+barW,y+barH); ctx2.lineTo(x,y+barH); ctx2.lineTo(x,y+r);
+    ctx2.quadraticCurveTo(x,y,x+r,y); ctx2.closePath(); ctx2.fill();
+  }
+  ctx2.restore();
+  vizRaf=requestAnimationFrame(drawViz);
+}
+function startViz() { if (vizRaf) return; drawViz(); }
+function stopViz() {
+  if (vizRaf) { cancelAnimationFrame(vizRaf); vizRaf=null; }
+  vizSmooth.fill(0); vizPeak=0.0001;
+  const c=document.getElementById('vizCanvas');
+  if (c) c.getContext('2d').clearRect(0,0,c.width,c.height);
+}
+
+// ─── Static waveform (progress bar) ───────────────────────
+const waveformCache={};
+let currentWaveform=null, currentWaveformKey=null, currentPCM=null;
+
+function resizeWaveCanvas() {
+  const c=document.getElementById('waveCanvas');
+  if (!c) return;
+  const dpr=window.devicePixelRatio||1;
+  c.width=c.clientWidth*dpr; c.height=c.clientHeight*dpr;
+}
+function drawWaveform() {
+  const c=document.getElementById('waveCanvas');
+  if (!c) return;
+  const ctx2=c.getContext('2d'), dpr=window.devicePixelRatio||1;
+  const W=c.clientWidth, H=c.clientHeight;
+  ctx2.clearRect(0,0,c.width,c.height); ctx2.save(); ctx2.scale(dpr,dpr);
+  const BARS=60, gap=2, barW=(W-gap*(BARS-1))/BARS;
+  if (!currentWaveform) {
+    ctx2.fillStyle='rgba(91,141,239,0.18)';
+    for (let i=0;i<BARS;i++) ctx2.fillRect(i*(barW+gap),H-3,barW,3);
+    ctx2.restore(); return;
+  }
+  const usableH=H-4, progress=audio.duration?audio.currentTime/audio.duration:0, progressX=progress*W;
+  const gradP=ctx2.createLinearGradient(0,H,0,0);
+  gradP.addColorStop(0,'#5B8DEF'); gradP.addColorStop(1,'#8B7FE8');
+  for (let i=0;i<BARS;i++) {
+    const x=i*(barW+gap), barH=Math.max(3,currentWaveform[i]*usableH), y=H-barH, r=Math.min(4,barW/2);
+    ctx2.fillStyle=(x+barW/2)<=progressX?gradP:'rgba(91,141,239,0.22)';
+    ctx2.beginPath();
+    ctx2.moveTo(x+r,y); ctx2.lineTo(x+barW-r,y); ctx2.quadraticCurveTo(x+barW,y,x+barW,y+r);
+    ctx2.lineTo(x+barW,y+barH); ctx2.lineTo(x,y+barH); ctx2.lineTo(x,y+r);
+    ctx2.quadraticCurveTo(x,y,x+r,y); ctx2.closePath(); ctx2.fill();
+  }
+  ctx2.restore();
+}
+async function loadWaveform(url, key) {
+  currentWaveformKey=key; currentPCM=null;
+  currentWaveform=waveformCache[key]||null; drawWaveform();
+  let decCtx;
+  try { decCtx=new (window.AudioContext||window.webkitAudioContext)(); } catch(e) { return; }
+  try {
+    const res=await fetch(url), buf=await res.arrayBuffer();
+    const decoded=await decCtx.decodeAudioData(buf);
+    const ch=decoded.getChannelData(0);
+    if (currentWaveformKey===key) currentPCM={data:ch.slice(0),sampleRate:decoded.sampleRate};
+    if (!waveformCache[key]) {
+      const BARS=60, step=Math.floor(ch.length/BARS), wf=new Float32Array(BARS);
+      for (let i=0;i<BARS;i++) { let s=0; for (let j=0;j<step;j++) s+=ch[i*step+j]**2; wf[i]=Math.sqrt(s/step); }
+      let mx=0; for (let i=0;i<BARS;i++) if(wf[i]>mx) mx=wf[i];
+      if (mx>0) for (let i=0;i<BARS;i++) wf[i]/=mx;
+      waveformCache[key]=wf;
+    }
+    if (currentWaveformKey===key) { currentWaveform=waveformCache[key]; drawWaveform(); }
+    decCtx.close();
+  } catch(e) { try { decCtx.close(); } catch(_) {} }
+}
+// ──────────────────────────────────────────────────────────
+
 function openPlayer(yId, tId, lId, n) {
   const y = cfg.years.find(x => x.id === yId);
   const t = cfg.terms.find(x => x.id === tId);
@@ -1047,8 +1183,19 @@ function openPlayer(yId, tId, lId, n) {
   document.getElementById('curTime').textContent = '0:00';
   setSpeed(1);
   pOverlay.classList.add('open');
+  requestAnimationFrame(() => {
+    resizeVizCanvas();
+    resizeWaveCanvas();
+    loadWaveform(audio.src, mk(yId, tId, lId, n));
+  });
 }
-function closePlayer() { audio.pause(); pOverlay.classList.remove('open'); cur = null; }
+function closePlayer() {
+  audio.pause(); stopViz();
+  currentWaveform = null; currentWaveformKey = null; currentPCM = null;
+  const wc = document.getElementById('waveCanvas');
+  if (wc) wc.getContext('2d').clearRect(0, 0, wc.width, wc.height);
+  pOverlay.classList.remove('open'); cur = null;
+}
 
 function getCurIdx() {
   if (!cur) return -1;
