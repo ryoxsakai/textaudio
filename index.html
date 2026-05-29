@@ -339,15 +339,14 @@ function populateFilters() {
   ySel.innerHTML = cfg.years.map(y => `<option value="${y.id}">${y.name}</option>`).join('');
   tSel.innerHTML = cfg.terms.map(t => `<option value="${t.id}">${t.name}</option>`).join('');
   lSel.innerHTML = cfg.levels.map(l => `<option value="${l.id}">${l.name}</option>`).join('');
-  // URL params (from QR code) take priority over localStorage
-  const p = new URLSearchParams(location.search);
-  const uy = cfg.years.find(x => x.tag === p.get('year'));
-  const ut = cfg.terms.find(x => x.tag === p.get('term'));
-  const ul = cfg.levels.find(x => x.tag === p.get('level'));
-  if (uy)                    ySel.value = uy.id;
-  else if (yv)               ySel.value = yv;
+  // Year: localStorage/default only — URL year param only affects player modal, not filter
+  if (yv)                    ySel.value = yv;
   else if (saved.year)       ySel.value = saved.year;
   else if (cfg.defaultYear)  ySel.value = cfg.defaultYear;
+  // Term/Level: URL params (QR code) take priority over localStorage
+  const p = new URLSearchParams(location.search);
+  const ut = cfg.terms.find(x => x.tag === p.get('term'));
+  const ul = cfg.levels.find(x => x.tag === p.get('level'));
   if (ut)                    tSel.value = ut.id;
   else if (tv)               tSel.value = tv;
   else if (saved.term)       tSel.value = saved.term;
