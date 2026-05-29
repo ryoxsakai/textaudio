@@ -388,10 +388,10 @@ function setPI(playing) {
   const icon = document.getElementById('iconPlay');
   icon.className = playing ? 'fas fa-pause' : 'fas fa-play';
 }
-document.getElementById('btnPlay').addEventListener('click', () => {
+document.getElementById('btnPlay').addEventListener('click', async () => {
   initAudioCtx();
-  if (audioCtx.state === 'suspended') audioCtx.resume();
-  if (audio.paused) { audio.play(); setPI(true); startViz(); }
+  try { if (audioCtx && audioCtx.state === 'suspended') await audioCtx.resume(); } catch(e) {}
+  if (audio.paused) { audio.play().catch(() => {}); setPI(true); startViz(); }
   else              { audio.pause(); setPI(false); stopViz(); }
 });
 document.getElementById('btnBack').addEventListener('click', () => { audio.currentTime = Math.max(0, audio.currentTime - 10); });
@@ -464,13 +464,19 @@ let audioCtx = null, analyser = null, vizRaf = null;
 
 function initAudioCtx() {
   if (audioCtx) return;
-  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  analyser = audioCtx.createAnalyser();
-  analyser.fftSize = 256;
-  analyser.smoothingTimeConstant = 0.82;
-  const src = audioCtx.createMediaElementSource(audio);
-  src.connect(analyser);
-  analyser.connect(audioCtx.destination);
+  try {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    analyser = audioCtx.createAnalyser();
+    analyser.fftSize = 256;
+    analyser.smoothingTimeConstant = 0.82;
+    const src = audioCtx.createMediaElementSource(audio);
+    src.connect(analyser);
+    analyser.connect(audioCtx.destination);
+  } catch(e) {
+    // Visualizer unavailable (e.g. CORS); audio still plays normally
+    audioCtx = null;
+    analyser = null;
+  }
 }
 
 function resizeVizCanvas() {
