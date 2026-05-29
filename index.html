@@ -23,7 +23,7 @@
     body { font-family: "M PLUS Rounded 1c", -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino Sans", sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; -webkit-font-smoothing: antialiased; }
 
     /* ── Header ── */
-    .app-header { background-color: #6E8FE8; background-image: linear-gradient(120deg, rgba(74,116,222,.32) 0%, rgba(150,124,214,.06) 100%), url('bg.png'); background-size: cover, cover; background-position: center, center bottom; background-repeat: no-repeat, no-repeat; color: #fff; padding: 32px 22px 38px; border-radius: 0 0 28px 28px; display: flex; align-items: center; justify-content: space-between; gap: 18px; box-shadow: 0 8px 26px rgba(91,141,239,.3); position: relative; z-index: 5; }
+    .app-header { background-color: #6E8FE8; background-image: linear-gradient(120deg, rgba(74,116,222,.32) 0%, rgba(150,124,214,.06) 100%), url('bg.png'); background-size: cover, cover; background-position: center, center 18%; background-attachment: scroll, fixed; background-repeat: no-repeat, no-repeat; color: #fff; padding: 32px 22px 38px; border-radius: 0 0 28px 28px; display: flex; align-items: center; justify-content: space-between; gap: 18px; box-shadow: 0 8px 26px rgba(91,141,239,.3); position: relative; z-index: 5; }
     .app-title { font-size: 1.5rem; font-weight: 700; line-height: 1.25; letter-spacing: .01em; flex: 1; min-width: 0; text-shadow: 0 1px 8px rgba(50,80,160,.25); }
 
     .ring { position: relative; width: 86px; height: 86px; flex-shrink: 0; }
@@ -37,10 +37,10 @@
 
     /* ── Filters ── */
     .filters { display: flex; gap: 10px; padding: 18px 16px 4px; flex-wrap: wrap; }
-    .pill { flex: 1 1 calc(33% - 10px); min-width: 98px; display: flex; align-items: center; gap: 7px; background: #fff; border-radius: 14px; padding: 0 11px; height: 50px; box-shadow: 0 3px 12px rgba(80,120,200,.08); cursor: pointer; transition: box-shadow .15s; }
+    .pill { flex: 1 1 0; min-width: 0; display: flex; align-items: center; gap: 7px; background: #fff; border-radius: 14px; padding: 0 11px; height: 50px; box-shadow: 0 3px 12px rgba(80,120,200,.08); cursor: pointer; transition: box-shadow .15s; }
     .pill:active { box-shadow: 0 1px 5px rgba(80,120,200,.12); }
     .pill > i:first-child { color: var(--primary); font-size: .9rem; flex-shrink: 0; }
-    .pill select { flex: 1; min-width: 0; border: none; background: none; font-size: .82rem; font-weight: 600; color: var(--text); appearance: none; -webkit-appearance: none; cursor: pointer; padding: 0; }
+    .pill select { flex: 1; min-width: 0; border: none; background: none; font-size: 1rem; font-weight: 600; color: var(--text); appearance: none; -webkit-appearance: none; cursor: pointer; padding: 0; }
     .pill select:focus { outline: none; }
     .pill-arrow { color: var(--muted); font-size: .68rem; flex-shrink: 0; pointer-events: none; }
 
@@ -111,6 +111,17 @@
     .btn-mark-done { width: 100%; height: 48px; border: none; border-radius: 14px; font-size: .9rem; font-weight: 700; cursor: pointer; background: var(--green); color: #fff; -webkit-tap-highlight-color: transparent; transition: opacity .15s; display: flex; align-items: center; justify-content: center; gap: 8px; }
     .btn-mark-done:active { opacity: .8; }
     .btn-mark-done.is-done { background: var(--primary-lt); color: var(--muted); }
+
+    /* ── Mobile tweaks ── */
+    @media (max-width: 380px) {
+      .filters { gap: 6px; padding: 14px 12px 4px; }
+      .pill { padding: 0 8px; gap: 5px; }
+      .lesson-list { padding: 0 12px 36px; gap: 9px; }
+      .lesson-card { padding: 13px 13px; gap: 10px; }
+      .play-fab { width: 38px; height: 38px; font-size: .9rem; }
+      .lc-status { display: none; }
+      .lc-title { white-space: normal; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+    }
   </style>
 </head>
 <body>
