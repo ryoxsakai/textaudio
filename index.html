@@ -82,10 +82,9 @@
     .btn-close { width: 32px; height: 32px; border: none; background: var(--primary-lt); border-radius: 50%; font-size: .85rem; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: var(--primary); }
     .btn-close:active { background: var(--border); }
 
-    .prog-wrap { position: relative; height: 40px; display: flex; align-items: center; cursor: pointer; touch-action: none; user-select: none; margin-bottom: 2px; }
-    .prog-track { position: absolute; left: 0; right: 0; height: 5px; background: var(--primary-lt); border-radius: 3px; overflow: hidden; }
-    .prog-fill { height: 100%; width: 0; background: var(--grad); border-radius: 3px; }
-    .prog-thumb { position: absolute; width: 16px; height: 16px; background: var(--primary); border-radius: 50%; top: 50%; left: 0; transform: translate(-50%,-50%); box-shadow: 0 1px 6px rgba(91,141,239,.45); }
+    .prog-wrap { position: relative; height: 44px; display: flex; align-items: center; cursor: pointer; touch-action: none; user-select: none; margin-bottom: 2px; }
+    .wave-canvas { position: absolute; left: 0; width: 100%; height: 38px; top: 50%; transform: translateY(-50%); border-radius: 8px; background: var(--primary-lt); pointer-events: none; display: block; }
+    .prog-thumb { position: absolute; width: 16px; height: 16px; background: var(--primary); border-radius: 50%; top: 50%; left: 0; transform: translate(-50%,-50%); box-shadow: 0 1px 6px rgba(91,141,239,.45); z-index: 2; }
     .time-row { display: flex; justify-content: space-between; font-size: .72rem; color: var(--muted); margin-bottom: 18px; }
 
     .ctrl-row { display: flex; align-items: center; justify-content: center; gap: 28px; margin-bottom: 18px; }
@@ -175,7 +174,7 @@
     </div>
     <audio id="audio" preload="metadata" crossorigin="anonymous"></audio>
     <div class="prog-wrap" id="progWrap">
-      <div class="prog-track"><div class="prog-fill" id="progFill"></div></div>
+      <canvas id="waveCanvas" class="wave-canvas"></canvas>
       <div class="prog-thumb" id="progThumb"></div>
     </div>
     <div class="time-row"><span id="curTime">0:00</span><span id="durTime">0:00</span></div>
@@ -376,23 +375,24 @@ const overlay = document.getElementById('overlay');
 function fmt(s) { return isFinite(s) ? Math.floor(s/60) + ':' + String(Math.floor(s%60)).padStart(2,'0') : '0:00'; }
 function updProg() {
   const p = audio.duration ? (audio.currentTime / audio.duration) * 100 : 0;
-  document.getElementById('progFill').style.width = p + '%';
   document.getElementById('progThumb').style.left = p + '%';
   document.getElementById('curTime').textContent = fmt(audio.currentTime);
 }
-audio.addEventListener('timeupdate', updProg);
-audio.addEventListener('loadedmetadata', () => { document.getElementById('durTime').textContent = fmt(audio.duration); updProg(); });
-audio.addEventListener('ended', () => { setPI(false); stopViz(); });
+audio.addEventListener('timeupdate', () => { updProg(); drawWaveform(); });
+audio.addEventListener('loadedmetadata', () => {
+  document.getElementById('durTime').textContent = fmt(audio.duration);
+  updProg(); drawWaveform();
+});
+audio.addEventListener('seeked', drawWaveform);
+audio.addEventListener('ended', () => { setPI(false); });
 
 function setPI(playing) {
   const icon = document.getElementById('iconPlay');
   icon.className = playing ? 'fas fa-pause' : 'fas fa-play';
 }
-document.getElementById('btnPlay').addEventListener('click', async () => {
-  initAudioCtx();
-  try { if (audioCtx && audioCtx.state === 'suspended') await audioCtx.resume(); } catch(e) {}
-  if (audio.paused) { audio.play().catch(() => {}); setPI(true); startViz(); }
-  else              { audio.pause(); setPI(false); stopViz(); }
+document.getElementById('btnPlay').addEventListener('click', () => {
+  if (audio.paused) { audio.play().catch(() => {}); setPI(true); }
+  else              { audio.pause(); setPI(false); }
 });
 document.getElementById('btnBack').addEventListener('click', () => { audio.currentTime = Math.max(0, audio.currentTime - 10); });
 document.getElementById('btnFwd').addEventListener('click',  () => { audio.currentTime = Math.min(audio.duration || 0, audio.currentTime + 10); });
@@ -457,7 +457,11 @@ function openPlayer(yId, tId, lId, n) {
   setSpeed(1);
   refreshMarkBtn();
   overlay.classList.add('open');
-  requestAnimationFrame(resizeVizCanvas);
+  requestAnimationFrame(() => {
+    resizeVizCanvas();
+    resizeWaveCanvas();
+    loadWaveform(audio.src, mk(yId, tId, lId, n));
+  });
 }
 // ─── Visualizer ───────────────────────────────────────────
 let audioCtx = null, analyser = null, vizRaf = null;
@@ -544,7 +548,94 @@ function stopViz() {
 }
 // ──────────────────────────────────────────────────────────
 
-function closePlayer() { audio.pause(); stopViz(); overlay.classList.remove('open'); cur = null; }
+// ─── Static waveform (progress bar) ───────────────────────
+const waveformCache = {};
+let currentWaveform = null, currentWaveformKey = null;
+
+function resizeWaveCanvas() {
+  const c = document.getElementById('waveCanvas');
+  if (!c) return;
+  const dpr = window.devicePixelRatio || 1;
+  c.width  = c.clientWidth  * dpr;
+  c.height = c.clientHeight * dpr;
+}
+
+function drawWaveform() {
+  const c = document.getElementById('waveCanvas');
+  if (!c) return;
+  const ctx2 = c.getContext('2d');
+  const dpr  = window.devicePixelRatio || 1;
+  const W = c.clientWidth, H = c.clientHeight;
+  ctx2.clearRect(0, 0, c.width, c.height);
+  ctx2.save();
+  ctx2.scale(dpr, dpr);
+  const BARS = 60, gap = 2;
+  const barW = (W - gap * (BARS - 1)) / BARS;
+  if (!currentWaveform) {
+    ctx2.fillStyle = 'rgba(91,141,239,0.18)';
+    for (let i = 0; i < BARS; i++)
+      ctx2.fillRect(i * (barW + gap), H - 3, barW, 3);
+    ctx2.restore(); return;
+  }
+  const usableH = H - 4;
+  const progress = audio.duration ? audio.currentTime / audio.duration : 0;
+  const progressX = progress * W;
+  const gradP = ctx2.createLinearGradient(0, H, 0, 0);
+  gradP.addColorStop(0, '#5B8DEF'); gradP.addColorStop(1, '#8B7FE8');
+  for (let i = 0; i < BARS; i++) {
+    const x = i * (barW + gap);
+    const barH = Math.max(3, currentWaveform[i] * usableH);
+    const y = H - barH;
+    const r = Math.min(4, barW / 2);
+    ctx2.fillStyle = (x + barW / 2) <= progressX ? gradP : 'rgba(91,141,239,0.22)';
+    ctx2.beginPath();
+    ctx2.moveTo(x + r, y);
+    ctx2.lineTo(x + barW - r, y);
+    ctx2.quadraticCurveTo(x + barW, y, x + barW, y + r);
+    ctx2.lineTo(x + barW, y + barH);
+    ctx2.lineTo(x, y + barH);
+    ctx2.lineTo(x, y + r);
+    ctx2.quadraticCurveTo(x, y, x + r, y);
+    ctx2.closePath();
+    ctx2.fill();
+  }
+  ctx2.restore();
+}
+
+async function loadWaveform(url, key) {
+  currentWaveformKey = key;
+  if (waveformCache[key]) { currentWaveform = waveformCache[key]; drawWaveform(); return; }
+  currentWaveform = null; drawWaveform();
+  let decCtx;
+  try { decCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e) { return; }
+  try {
+    const res = await fetch(url);
+    const buf = await res.arrayBuffer();
+    const decoded = await decCtx.decodeAudioData(buf);
+    decCtx.close();
+    const BARS = 60, ch = decoded.getChannelData(0);
+    const step = Math.floor(ch.length / BARS);
+    const wf = new Float32Array(BARS);
+    for (let i = 0; i < BARS; i++) {
+      let s = 0;
+      for (let j = 0; j < step; j++) s += ch[i * step + j] ** 2;
+      wf[i] = Math.sqrt(s / step);
+    }
+    const mx = Math.max(...wf);
+    if (mx > 0) for (let i = 0; i < BARS; i++) wf[i] /= mx;
+    waveformCache[key] = wf;
+    if (currentWaveformKey === key) { currentWaveform = wf; drawWaveform(); }
+  } catch(e) { try { decCtx.close(); } catch(_) {} }
+}
+// ──────────────────────────────────────────────────────────
+
+function closePlayer() {
+  audio.pause(); stopViz();
+  currentWaveform = null; currentWaveformKey = null;
+  const wc = document.getElementById('waveCanvas');
+  if (wc) wc.getContext('2d').clearRect(0, 0, wc.width, wc.height);
+  overlay.classList.remove('open'); cur = null;
+}
 document.getElementById('btnClose').addEventListener('click', closePlayer);
 
 function getCurIdx() {
