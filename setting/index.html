@@ -123,6 +123,13 @@
     .btn-preset.active { border-color: var(--primary); background: var(--primary); color: #fff; }
     .btn-preset:active { opacity: .7; }
 
+    /* Level override modal */
+    .lvl-ov-row { display:flex; align-items:center; gap:12px; padding:10px 0; border-bottom:1px solid var(--border); }
+    .lvl-ov-row:last-child { border-bottom:none; }
+    .lvl-ov-name { flex:1; font-size:.88rem; color:var(--text); }
+    .lvl-ov-def  { font-size:.76rem; color:var(--muted); white-space:nowrap; }
+    .lvl-ov-input { width:68px; text-align:center; border:1.5px solid var(--border); border-radius:8px; padding:6px 8px; font-size:.88rem; font-family:inherit; color:var(--text); }
+
     /* QR */
     .qr-sheet { text-align: center; }
     .qr-sub { font-size: .85rem; color: var(--muted); margin-bottom: 16px; }
@@ -251,6 +258,19 @@
   </div>
   <div class="cl-scroll"><div id="contentListTable"><div class="msg-c">読み込み中…</div></div></div>
   <button class="btn btn-navy btn-save" id="saveTitlesBtn" style="margin-top:14px;"><i class="fas fa-floppy-disk fa-fw"></i> タイトルを保存する</button>
+</div>
+
+<!-- Level lessons override overlay -->
+<div class="overlay" id="lvlOverlayDiv">
+  <div class="sheet" style="max-width:400px;">
+    <div class="pl-header">
+      <div class="pl-title" id="lvlOverlayTitle">特殊講数設定</div>
+      <button class="btn-close" id="lvlOverlayClose"><i class="fas fa-xmark"></i></button>
+    </div>
+    <p style="font-size:.8rem;color:var(--muted);margin-bottom:16px;">空欄にすると各学期の標準講数を使用します</p>
+    <div id="lvlOverlayList"></div>
+    <button class="btn btn-navy" id="lvlOverlaySave" style="width:100%;height:44px;margin-top:16px;font-size:.875rem;">保存</button>
+  </div>
 </div>
 
 <!-- Player overlay -->
@@ -505,7 +525,7 @@ function renderTermList() {
   });
 }
 document.getElementById('addTermBtn').addEventListener('click', () => {
-  cfg.terms.push({ id: 't' + Date.now(), name: '', tag: '', lessons: 1 });
+  cfg.terms.push({ id: 't' + Date.now(), name: '', tag: '', lessons: 1, levelLessons: {} });
   renderTermList();
 });
 
@@ -518,7 +538,8 @@ function renderLevelList() {
     const div = makeCrudItem(
       `<div class="crud-field wide"><label>表示名</label><input type="text" value="${esc(l.name)}" data-field="name" data-arr="levels" data-idx="${i}"></div>
        <div class="crud-field wide"><label>タグ（英字）</label><input type="text" value="${esc(l.tag)}" data-field="tag" data-arr="levels" data-idx="${i}"></div>`,
-      `<button class="btn ${isDef?'btn-navy':'btn-ghost'}" style="height:32px;width:32px;padding:0;font-size:.9rem;" title="${isDef?'デフォルト（設定中）':'デフォルトに設定'}" onclick="setDefault('levels','${l.id}')"><i class="${isDef?'fas':'far'} fa-star"></i></button>
+      `<button class="btn btn-ghost" style="height:32px;width:32px;padding:0;font-size:.9rem;" title="特殊講数設定" onclick="openLevelOverride('${l.id}')"><i class="fas fa-gear"></i></button>
+       <button class="btn ${isDef?'btn-navy':'btn-ghost'}" style="height:32px;width:32px;padding:0;font-size:.9rem;" title="${isDef?'デフォルト（設定中）':'デフォルトに設定'}" onclick="setDefault('levels','${l.id}')"><i class="${isDef?'fas':'far'} fa-star"></i></button>
        <button class="btn btn-ghost" style="height:32px;width:32px;padding:0;font-size:.9rem;" title="上へ" onclick="moveArr('levels',${i},-1,renderLevelList)" ${i===0?'disabled':''}><i class="fas fa-chevron-up"></i></button>
        <button class="btn btn-ghost" style="height:32px;width:32px;padding:0;font-size:.9rem;" title="下へ" onclick="moveArr('levels',${i},1,renderLevelList)" ${i===cfg.levels.length-1?'disabled':''}><i class="fas fa-chevron-down"></i></button>
        <button class="btn btn-red"   style="height:32px;width:32px;padding:0;font-size:.9rem;" title="削除" onclick="delArr('levels',${i},renderLevelList)"><i class="fas fa-trash"></i></button>`
@@ -530,6 +551,46 @@ function renderLevelList() {
 document.getElementById('addLevelBtn').addEventListener('click', () => {
   cfg.levels.push({ id: 'l' + Date.now(), name: '', tag: '' });
   renderLevelList();
+});
+
+/* ── Level lessons override ── */
+let lvlOverrideLevelId = null;
+function openLevelOverride(levelId) {
+  lvlOverrideLevelId = levelId;
+  const level = cfg.levels.find(l => l.id === levelId);
+  document.getElementById('lvlOverlayTitle').textContent = `「${level?.name || levelId}」特殊講数設定`;
+  document.getElementById('lvlOverlayList').innerHTML = cfg.terms.map(t => {
+    const ov = (t.levelLessons || {})[levelId];
+    return `<div class="lvl-ov-row">
+      <span class="lvl-ov-name">${esc(t.name || '（未設定）')}</span>
+      <span class="lvl-ov-def">標準 ${t.lessons}講</span>
+      <input class="lvl-ov-input" type="number" min="1" placeholder="${t.lessons}"
+             value="${ov != null ? ov : ''}" id="lvlOv_${t.id}">
+    </div>`;
+  }).join('');
+  document.getElementById('lvlOverlayDiv').classList.add('open');
+}
+function closeLevelOverride() {
+  document.getElementById('lvlOverlayDiv').classList.remove('open');
+  lvlOverrideLevelId = null;
+}
+document.getElementById('lvlOverlayClose').addEventListener('click', closeLevelOverride);
+document.getElementById('lvlOverlayDiv').addEventListener('click', e => { if (e.target === document.getElementById('lvlOverlayDiv')) closeLevelOverride(); });
+document.getElementById('lvlOverlaySave').addEventListener('click', () => {
+  cfg.terms.forEach(t => {
+    if (!t.levelLessons) t.levelLessons = {};
+    const input = document.getElementById(`lvlOv_${t.id}`);
+    if (!input) return;
+    const val = parseInt(input.value, 10);
+    if (!input.value.trim() || isNaN(val) || val < 1) {
+      delete t.levelLessons[lvlOverrideLevelId];
+    } else {
+      t.levelLessons[lvlOverrideLevelId] = val;
+    }
+  });
+  closeLevelOverride();
+  toast('特殊講数を設定しました');
+  renderContentList();
 });
 
 /* ── CRUD shared helpers ── */
@@ -869,9 +930,11 @@ function allRows() {
   const rows = [];
   for (const y of cfg.years)
     for (const t of cfg.terms)
-      for (const l of cfg.levels)
-        for (let n = 1; n <= t.lessons; n++)
+      for (const l of cfg.levels) {
+        const lessons = (t.levelLessons || {})[l.id] ?? t.lessons;
+        for (let n = 1; n <= lessons; n++)
           rows.push({ y, t, l, n, key: mk(y.id, t.id, l.id, n) });
+      }
   return rows;
 }
 function audioUrl(y, t, l, n) { return `${cfg.r2BaseUrl}/${y.tag}/${t.tag}/${l.tag}/lesson${n}.mp3`; }

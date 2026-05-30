@@ -355,9 +355,11 @@ function allRows() {
   const rows = [];
   for (const y of cfg.years)
     for (const t of cfg.terms)
-      for (const l of cfg.levels)
-        for (let n = 1; n <= t.lessons; n++)
+      for (const l of cfg.levels) {
+        const lessons = (t.levelLessons || {})[l.id] ?? t.lessons;
+        for (let n = 1; n <= lessons; n++)
           rows.push({ y, t, l, n, key: mk(y.id, t.id, l.id, n) });
+      }
   return rows;
 }
 function audioPath(y, t, l, n) { return `${y.tag}/${t.tag}/${l.tag}/lesson${n}.mp3`; }
