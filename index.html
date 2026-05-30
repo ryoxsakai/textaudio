@@ -76,6 +76,15 @@
     .overlay.open { display: flex; }
     .sheet { width: 92%; max-width: 460px; max-height: 90dvh; background: #fff; border-radius: 24px; padding: 22px 22px 28px; overflow-y: auto; box-shadow: 0 12px 48px rgba(60,90,160,.28); }
 
+    /* ── History ── */
+    .hist-row { display:flex; align-items:center; gap:12px; padding:11px 0; border-bottom:1px solid var(--border); }
+    .hist-row:last-child { border-bottom:none; }
+    .hist-date { font-size:.88rem; color:var(--text); white-space:nowrap; min-width:100px; }
+    .hist-date.today { font-weight:700; color:var(--primary); }
+    .hist-bar { flex:1; height:5px; background:var(--border); border-radius:3px; overflow:hidden; }
+    .hist-bar-fill { height:100%; background:var(--grad); border-radius:3px; }
+    .hist-time { font-size:.9rem; font-weight:700; color:var(--text); font-variant-numeric:tabular-nums; white-space:nowrap; }
+
     /* ── Player ── */
     .pl-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 18px; }
     .pl-title { font-size: .92rem; font-weight: 700; color: var(--text); line-height: 1.45; flex: 1; padding-right: 12px; }
@@ -160,10 +169,24 @@
 
 <div class="section-head">
   <span class="sh-title"><i class="fas fa-headphones"></i> 講義一覧</span>
-  <span class="sh-count" id="completionBadge"><i class="fas fa-circle-check"></i> 完了 0</span>
+  <div style="display:flex;align-items:center;gap:8px">
+    <span class="sh-count" id="dailyTimeBadge" onclick="openHistory()" style="cursor:pointer"><i class="fas fa-clock" style="color:var(--primary)"></i> <span id="dailyTimeText">00:00</span></span>
+    <span class="sh-count" id="completionBadge"><i class="fas fa-circle-check"></i> 完了 0</span>
+  </div>
 </div>
 
 <div class="lesson-list" id="tableContainer"><div class="msg-c">読み込み中…</div></div>
+
+<!-- History modal -->
+<div class="overlay" id="historyOverlay">
+  <div class="sheet">
+    <div class="pl-header">
+      <div class="pl-title"><i class="fas fa-clock" style="color:var(--primary);margin-right:8px"></i>リスニング履歴（過去30日）</div>
+      <button class="btn-close" id="btnHistoryClose"><i class="fas fa-xmark"></i></button>
+    </div>
+    <div id="historyList"></div>
+  </div>
+</div>
 
 <!-- Player modal -->
 <div class="overlay" id="overlay">
@@ -208,6 +231,72 @@
 <script>
 const SK = 'dke_settings';
 const DK = 'dke_completed';
+const DT_KEY = 'dke_daily_time';
+let dailyAccSec = 0, lastPlayT = null;
+
+function todayStr() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function loadDailyTime() {
+  try { dailyAccSec = (JSON.parse(localStorage.getItem(DT_KEY) || '{}'))[todayStr()] || 0; } catch { dailyAccSec = 0; }
+}
+function saveDailyTime() {
+  try {
+    const s = JSON.parse(localStorage.getItem(DT_KEY) || '{}');
+    const today = todayStr();
+    s[today] = Math.round(dailyAccSec);
+    const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 30);
+    const cutStr = cutoff.toISOString().slice(0, 10);
+    for (const k of Object.keys(s)) { if (k < cutStr) delete s[k]; }
+    localStorage.setItem(DT_KEY, JSON.stringify(s));
+  } catch {}
+}
+function fmtHHMM(sec) {
+  const s = Math.round(sec);
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+}
+function updateDailyTimeBadge() {
+  const el = document.getElementById('dailyTimeText');
+  if (el) el.textContent = fmtHHMM(dailyAccSec);
+}
+const WEEK_JA = ['日','月','火','水','木','金','土'];
+function fmtDateJa(k) {
+  const [y, m, d] = k.split('-').map(Number);
+  const w = WEEK_JA[new Date(y, m - 1, d).getDay()];
+  return `${m}月${d}日（${w}）`;
+}
+function openHistory() {
+  let raw = {};
+  try { raw = JSON.parse(localStorage.getItem(DT_KEY) || '{}'); } catch {}
+  const today = todayStr();
+  const days = [];
+  for (let i = 0; i < 30; i++) {
+    const d = new Date(); d.setDate(d.getDate() - i);
+    const k = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    if (raw[k] > 0) days.push({ key: k, sec: raw[k] });
+  }
+  const list = document.getElementById('historyList');
+  if (!days.length) {
+    list.innerHTML = '<div class="msg-c" style="padding:32px 0">まだ記録がありません</div>';
+  } else {
+    const maxSec = Math.max(...days.map(d => d.sec));
+    list.innerHTML = days.map(({ key, sec }) => {
+      const pct = maxSec ? Math.round(sec / maxSec * 100) : 0;
+      return `<div class="hist-row">
+        <span class="hist-date${key === today ? ' today' : ''}">${fmtDateJa(key)}</span>
+        <div class="hist-bar"><div class="hist-bar-fill" style="width:${pct}%"></div></div>
+        <span class="hist-time">${fmtHHMM(sec)}</span>
+      </div>`;
+    }).join('');
+  }
+  document.getElementById('historyOverlay').classList.add('open');
+}
+function closeHistory() {
+  document.getElementById('historyOverlay').classList.remove('open');
+}
 const FK = 'dke_filter';
 const DEFAULTS = {
   r2BaseUrl: 'https://textaudio.ryoxsakai.workers.dev',
@@ -378,13 +467,22 @@ function updProg() {
   document.getElementById('progThumb').style.left = p + '%';
   document.getElementById('curTime').textContent = fmt(audio.currentTime);
 }
-audio.addEventListener('timeupdate', () => { updProg(); drawWaveform(); });
+audio.addEventListener('play', () => { lastPlayT = audio.currentTime; });
+audio.addEventListener('pause', () => { lastPlayT = null; saveDailyTime(); });
+audio.addEventListener('timeupdate', () => {
+  if (!audio.paused && lastPlayT !== null) {
+    const delta = audio.currentTime - lastPlayT;
+    if (delta > 0 && delta < 2.5) { dailyAccSec += delta; updateDailyTimeBadge(); }
+  }
+  lastPlayT = audio.paused ? null : audio.currentTime;
+  updProg(); drawWaveform();
+});
 audio.addEventListener('loadedmetadata', () => {
   document.getElementById('durTime').textContent = fmt(audio.duration);
   updProg(); drawWaveform();
 });
-audio.addEventListener('seeked', drawWaveform);
-audio.addEventListener('ended', () => { setPI(false); });
+audio.addEventListener('seeked', () => { lastPlayT = audio.paused ? null : audio.currentTime; drawWaveform(); });
+audio.addEventListener('ended', () => { setPI(false); stopViz(); lastPlayT = null; saveDailyTime(); });
 
 function setPI(playing) {
   const icon = document.getElementById('iconPlay');
@@ -668,13 +766,15 @@ async function loadWaveform(url, key) {
 // ──────────────────────────────────────────────────────────
 
 function closePlayer() {
-  audio.pause(); stopViz();
+  audio.pause(); stopViz(); lastPlayT = null; saveDailyTime();
   currentWaveform = null; currentWaveformKey = null; currentPCM = null;
   const wc = document.getElementById('waveCanvas');
   if (wc) wc.getContext('2d').clearRect(0, 0, wc.width, wc.height);
   overlay.classList.remove('open'); cur = null;
 }
 document.getElementById('btnClose').addEventListener('click', closePlayer);
+document.getElementById('btnHistoryClose').addEventListener('click', closeHistory);
+document.getElementById('historyOverlay').addEventListener('click', e => { if (e.target === document.getElementById('historyOverlay')) closeHistory(); });
 
 function getCurIdx() {
   if (!cur) return -1;
@@ -714,7 +814,7 @@ function handleParams() {
 }
 
 async function init() {
-  loadDone();
+  loadDone(); loadDailyTime(); updateDailyTimeBadge();
   try { await loadCfg(); }
   catch { document.getElementById('tableContainer').innerHTML = '<div class="msg-c err">コンテンツを読み込めませんでした</div>'; return; }
   if (cfg.siteTitle) {
