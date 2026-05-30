@@ -160,7 +160,10 @@
 
 <div class="section-head">
   <span class="sh-title"><i class="fas fa-headphones"></i> 講義一覧</span>
-  <span class="sh-count" id="completionBadge"><i class="fas fa-circle-check"></i> 完了 0</span>
+  <div style="display:flex;align-items:center;gap:8px">
+    <span class="sh-count" id="dailyTimeBadge" style="display:none"><i class="fas fa-clock" style="color:var(--primary)"></i> <span id="dailyTimeText">0分</span></span>
+    <span class="sh-count" id="completionBadge"><i class="fas fa-circle-check"></i> 完了 0</span>
+  </div>
 </div>
 
 <div class="lesson-list" id="tableContainer"><div class="msg-c">読み込み中…</div></div>
@@ -208,6 +211,40 @@
 <script>
 const SK = 'dke_settings';
 const DK = 'dke_completed';
+const DT_KEY = 'dke_daily_time';
+let dailyAccSec = 0, lastPlayT = null;
+
+function todayStr() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function loadDailyTime() {
+  try { dailyAccSec = (JSON.parse(localStorage.getItem(DT_KEY) || '{}'))[todayStr()] || 0; } catch { dailyAccSec = 0; }
+}
+function saveDailyTime() {
+  try {
+    const s = JSON.parse(localStorage.getItem(DT_KEY) || '{}');
+    const today = todayStr();
+    s[today] = Math.round(dailyAccSec);
+    const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 30);
+    const cutStr = cutoff.toISOString().slice(0, 10);
+    for (const k of Object.keys(s)) { if (k < cutStr) delete s[k]; }
+    localStorage.setItem(DT_KEY, JSON.stringify(s));
+  } catch {}
+}
+function fmtDailyTime(sec) {
+  const m = Math.floor(sec / 60);
+  if (m < 60) return `${m}分`;
+  const h = Math.floor(m / 60), rm = m % 60;
+  return rm ? `${h}時間${rm}分` : `${h}時間`;
+}
+function updateDailyTimeBadge() {
+  const el = document.getElementById('dailyTimeBadge');
+  if (!el) return;
+  if (dailyAccSec < 60) { el.style.display = 'none'; return; }
+  el.style.display = 'flex';
+  document.getElementById('dailyTimeText').textContent = fmtDailyTime(dailyAccSec);
+}
 const FK = 'dke_filter';
 const DEFAULTS = {
   r2BaseUrl: 'https://textaudio.ryoxsakai.workers.dev',
@@ -378,13 +415,22 @@ function updProg() {
   document.getElementById('progThumb').style.left = p + '%';
   document.getElementById('curTime').textContent = fmt(audio.currentTime);
 }
-audio.addEventListener('timeupdate', () => { updProg(); drawWaveform(); });
+audio.addEventListener('play', () => { lastPlayT = audio.currentTime; });
+audio.addEventListener('pause', () => { lastPlayT = null; saveDailyTime(); });
+audio.addEventListener('timeupdate', () => {
+  if (!audio.paused && lastPlayT !== null) {
+    const delta = audio.currentTime - lastPlayT;
+    if (delta > 0 && delta < 2.5) { dailyAccSec += delta; updateDailyTimeBadge(); }
+  }
+  lastPlayT = audio.paused ? null : audio.currentTime;
+  updProg(); drawWaveform();
+});
 audio.addEventListener('loadedmetadata', () => {
   document.getElementById('durTime').textContent = fmt(audio.duration);
   updProg(); drawWaveform();
 });
-audio.addEventListener('seeked', drawWaveform);
-audio.addEventListener('ended', () => { setPI(false); });
+audio.addEventListener('seeked', () => { lastPlayT = audio.paused ? null : audio.currentTime; drawWaveform(); });
+audio.addEventListener('ended', () => { setPI(false); stopViz(); lastPlayT = null; saveDailyTime(); });
 
 function setPI(playing) {
   const icon = document.getElementById('iconPlay');
@@ -668,7 +714,7 @@ async function loadWaveform(url, key) {
 // ──────────────────────────────────────────────────────────
 
 function closePlayer() {
-  audio.pause(); stopViz();
+  audio.pause(); stopViz(); lastPlayT = null; saveDailyTime();
   currentWaveform = null; currentWaveformKey = null; currentPCM = null;
   const wc = document.getElementById('waveCanvas');
   if (wc) wc.getContext('2d').clearRect(0, 0, wc.width, wc.height);
@@ -714,7 +760,7 @@ function handleParams() {
 }
 
 async function init() {
-  loadDone();
+  loadDone(); loadDailyTime(); updateDailyTimeBadge();
   try { await loadCfg(); }
   catch { document.getElementById('tableContainer').innerHTML = '<div class="msg-c err">コンテンツを読み込めませんでした</div>'; return; }
   if (cfg.siteTitle) {
