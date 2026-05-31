@@ -645,9 +645,10 @@ function drawViz() {
 
   const usableH = H - 4;
   const gap = 3, barW = (W - gap * (VIZ_BARS - 1)) / VIZ_BARS;
-  const grad = ctx2.createLinearGradient(0, H, 0, 0);
-  grad.addColorStop(0, '#5B8DEF');
-  grad.addColorStop(1, '#8B7FE8');
+  const grad = ctx2.createLinearGradient(0, H, W, 0);
+  grad.addColorStop(0,   '#4A7AE0');
+  grad.addColorStop(0.5, '#8B7FE8');
+  grad.addColorStop(1,   '#C490F5');
   ctx2.fillStyle = grad;
 
   for (let i = 0; i < VIZ_BARS; i++) {
@@ -713,8 +714,10 @@ function drawWaveform() {
   const usableH = H - 4;
   const progress = audio.duration ? audio.currentTime / audio.duration : 0;
   const progressX = progress * W;
-  const gradP = ctx2.createLinearGradient(0, H, 0, 0);
-  gradP.addColorStop(0, '#5B8DEF'); gradP.addColorStop(1, '#8B7FE8');
+  const gradP = ctx2.createLinearGradient(0, H, W, 0);
+  gradP.addColorStop(0,   '#4A7AE0');
+  gradP.addColorStop(0.5, '#8B7FE8');
+  gradP.addColorStop(1,   '#C490F5');
   for (let i = 0; i < BARS; i++) {
     const x = i * (barW + gap);
     const barH = Math.max(3, currentWaveform[i] * usableH);
