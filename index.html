@@ -108,7 +108,7 @@
     .speed-label { font-size: .72rem; color: var(--muted); text-align: center; margin-bottom: 8px; letter-spacing: .04em; }
     .speed-preset-row { display: flex; gap: 6px; justify-content: center; }
     .btn-preset { border: 1.5px solid var(--border); background: #fff; color: var(--muted); font-size: .77rem; font-weight: 600; padding: 6px 10px; border-radius: 20px; cursor: pointer; min-height: 34px; -webkit-tap-highlight-color: transparent; transition: all .15s; }
-    .btn-preset.active { border-color: var(--primary); background: var(--primary); color: #fff; }
+    .btn-preset.active { border-color: transparent; background: var(--grad); color: #fff; }
     .btn-preset:active { opacity: .7; }
 
     /* ── Lesson nav ── */
@@ -120,9 +120,9 @@
     #vizCanvas { width: 100%; height: 68px; display: block; border-radius: 10px; background: var(--primary-lt); margin-bottom: 16px; }
 
     /* ── Mark done ── */
-    .btn-mark-done { width: 100%; height: 48px; border: none; border-radius: 14px; font-size: .9rem; font-weight: 700; cursor: pointer; background: var(--green); color: #fff; -webkit-tap-highlight-color: transparent; transition: opacity .15s; display: flex; align-items: center; justify-content: center; gap: 8px; }
+    .btn-mark-done { width: 100%; height: 48px; border: none; border-radius: 14px; font-size: .9rem; font-weight: 700; cursor: pointer; background: linear-gradient(135deg, #3FB984 0%, #28B890 100%); color: #fff; -webkit-tap-highlight-color: transparent; transition: opacity .15s; display: flex; align-items: center; justify-content: center; gap: 8px; }
     .btn-mark-done:active { opacity: .8; }
-    .btn-mark-done.is-done { background: var(--primary-lt); color: var(--muted); }
+    .btn-mark-done.is-done { background: linear-gradient(135deg, #EAF1FE 0%, #EDE8FD 100%); color: var(--muted); }
 
     /* ── Mobile tweaks ── */
     @media (max-width: 380px) {
