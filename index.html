@@ -51,6 +51,10 @@
     .sh-title i { color: var(--primary); }
     .sh-count { font-size: .76rem; font-weight: 600; color: var(--muted); background: #fff; padding: 6px 13px; border-radius: 20px; box-shadow: 0 2px 8px rgba(80,120,200,.08); display: flex; align-items: center; gap: 6px; }
     .sh-count i { color: var(--green); }
+    .sh-count.filter-done   { background: var(--green-lt); color: #2A8A68; }
+    .sh-count.filter-done i { color: #2A8A68; }
+    .sh-count.filter-undone   { background: #FCEDF0; color: #C05060; }
+    .sh-count.filter-undone i { color: #C05060; }
 
     /* ── Lesson cards ── */
     .lesson-list { display: flex; flex-direction: column; gap: 11px; padding: 0 16px 36px; }
@@ -171,7 +175,7 @@
   <span class="sh-title"><i class="fas fa-headphones"></i> 講義一覧</span>
   <div style="display:flex;align-items:center;gap:8px">
     <span class="sh-count" id="dailyTimeBadge" onclick="openHistory()" style="cursor:pointer"><i class="fas fa-clock" style="color:var(--primary)"></i> <span id="dailyTimeText">00:00:00</span></span>
-    <span class="sh-count" id="completionBadge"><i class="fas fa-circle-check"></i> 完了 0</span>
+    <span class="sh-count" id="completionBadge" onclick="cycleCompletionFilter()" style="cursor:pointer"><i class="fas fa-circle-check"></i> 完了 0</span>
   </div>
 </div>
 
@@ -370,21 +374,41 @@ function audioUrlWorker(y, t, l, n) {
 }
 
 const RING_CIRC = 238.76;
+let completionFilter = 0; // 0=all 1=done 2=undone
+
+function cycleCompletionFilter() {
+  completionFilter = (completionFilter + 1) % 3;
+  render();
+}
+
 function updateProgress(rows) {
   const total = rows.length;
   const cnt = rows.filter(r => done[r.key]).length;
   const pct = total ? Math.round(cnt / total * 100) : 0;
   document.getElementById('progPct').textContent = pct + '%';
   document.getElementById('ringFill').style.strokeDashoffset = RING_CIRC * (1 - pct / 100);
-  document.getElementById('completionBadge').innerHTML = `<i class="fas fa-circle-check"></i> 完了 ${cnt}`;
+  const badge = document.getElementById('completionBadge');
+  if (completionFilter === 1) {
+    badge.className = 'sh-count filter-done';
+    badge.innerHTML = `<i class="fas fa-circle-check"></i> 完了済 ${cnt}`;
+  } else if (completionFilter === 2) {
+    badge.className = 'sh-count filter-undone';
+    badge.innerHTML = `<i class="fas fa-circle-xmark"></i> 未完了 ${total - cnt}`;
+  } else {
+    badge.className = 'sh-count';
+    badge.innerHTML = `<i class="fas fa-circle-check"></i> 完了 ${cnt}`;
+  }
 }
 
 function render() {
   const yF = document.getElementById('filterYear').value;
   const tF = document.getElementById('filterTerm').value;
   const lF = document.getElementById('filterLevel').value;
-  const rows = allRows().filter(r => (!yF || r.y.id === yF) && (!tF || r.t.id === tF) && (!lF || r.l.id === lF));
-  updateProgress(rows);
+  const baseRows = allRows().filter(r => (!yF || r.y.id === yF) && (!tF || r.t.id === tF) && (!lF || r.l.id === lF));
+  updateProgress(baseRows);
+  const rows = completionFilter === 1 ? baseRows.filter(r =>  done[r.key])
+             : completionFilter === 2 ? baseRows.filter(r => !done[r.key])
+             : baseRows;
   const con = document.getElementById('tableContainer');
   if (!rows.length) { con.innerHTML = '<div class="msg-c">該当するコンテンツがありません</div>'; return; }
   let h = '';
