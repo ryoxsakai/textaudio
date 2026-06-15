@@ -55,6 +55,9 @@
     .sh-count.filter-done i { color: #2A8A68; }
     .sh-count.filter-undone   { background: #FCEDF0; color: #C05060; }
     .sh-count.filter-undone i { color: #C05060; }
+    .sh-count.filter-dl   { background: var(--primary-lt); color: var(--primary); }
+    .sh-count.filter-dl i { color: var(--primary); }
+    .lc-dl { color: var(--primary); font-size: .65rem; }
 
     /* ── Lesson cards ── */
     .lesson-list { display: flex; flex-direction: column; gap: 11px; padding: 0 16px 36px; }
@@ -179,6 +182,7 @@
   <span class="sh-title"><i class="fas fa-headphones"></i> 講義一覧</span>
   <div style="display:flex;align-items:center;gap:8px">
     <span class="sh-count" id="dailyTimeBadge" onclick="openHistory()" style="cursor:pointer"><i class="fas fa-clock" style="color:var(--primary)"></i> <span id="dailyTimeText">00:00:00</span></span>
+    <span class="sh-count" id="dlBadge" onclick="toggleDlFilter()" style="cursor:pointer"><i class="fas fa-download"></i> <span id="dlBadgeCount">0</span></span>
     <span class="sh-count" id="completionBadge" onclick="cycleCompletionFilter()" style="cursor:pointer"><i class="fas fa-circle-check"></i> 完了 0</span>
   </div>
 </div>
@@ -280,7 +284,31 @@ async function idbDel(key) {
     tx.onerror = rej;
   });
 }
+async function idbGetAllKeys() {
+  const db = await openIDB();
+  return new Promise((res, rej) => {
+    const tx = db.transaction(IDB_STORE, 'readonly');
+    const r = tx.objectStore(IDB_STORE).getAllKeys();
+    r.onsuccess = e => res(e.target.result || []);
+    r.onerror = rej;
+    tx.oncomplete = () => db.close();
+  });
+}
 let currentObjURL = null;
+const cachedKeys = new Set();
+let dlFilter = false;
+
+async function loadCachedKeys() {
+  try { const keys = await idbGetAllKeys(); cachedKeys.clear(); keys.forEach(k => cachedKeys.add(k)); } catch {}
+}
+function toggleDlFilter() { dlFilter = !dlFilter; render(); }
+function updateDlBadge() {
+  const badge = document.getElementById('dlBadge');
+  if (!badge) return;
+  badge.className = 'sh-count' + (dlFilter ? ' filter-dl' : '');
+  const cnt = document.getElementById('dlBadgeCount');
+  if (cnt) cnt.textContent = cachedKeys.size;
+}
 function revokeObjURL() {
   if (currentObjURL) { URL.revokeObjectURL(currentObjURL); currentObjURL = null; }
 }
@@ -458,20 +486,24 @@ function render() {
   const lF = document.getElementById('filterLevel').value;
   const baseRows = allRows().filter(r => (!yF || r.y.id === yF) && (!tF || r.t.id === tF) && (!lF || r.l.id === lF));
   updateProgress(baseRows);
-  const rows = completionFilter === 1 ? baseRows.filter(r =>  done[r.key])
-             : completionFilter === 2 ? baseRows.filter(r => !done[r.key])
-             : baseRows;
+  updateDlBadge();
+  let rows = completionFilter === 1 ? baseRows.filter(r =>  done[r.key])
+           : completionFilter === 2 ? baseRows.filter(r => !done[r.key])
+           : baseRows;
+  if (dlFilter) rows = rows.filter(r => cachedKeys.has(audioPath(r.y, r.t, r.l, r.n)));
   const con = document.getElementById('tableContainer');
   if (!rows.length) { con.innerHTML = '<div class="msg-c">該当するコンテンツがありません</div>'; return; }
   let h = '';
   for (const r of rows) {
     const d = !!done[r.key];
     const lt = cfg.lessonTitles?.[r.key] || '';
+    const isCached = cachedKeys.has(audioPath(r.y, r.t, r.l, r.n));
+    const dlMark = isCached ? '<i class="fas fa-download lc-dl"></i> ' : '';
     const status = d ? '<i class="fas fa-circle-check"></i> 完了' : '未再生';
     h += `<button class="lesson-card${d ? ' is-done' : ''}" id="card-${r.key}" disabled onclick="openPlayer('${r.y.id}','${r.t.id}','${r.l.id}',${r.n})">
       <span class="lc-num">第${r.n}講</span>
       <span class="lc-title${lt ? '' : ' empty'}">${lt ? esc(lt) : 'タイトル未設定'}</span>
-      <span class="lc-status${d ? ' done' : ''}">${status}</span>
+      <span class="lc-status${d ? ' done' : ''}">${dlMark}${status}</span>
       <span class="play-fab"><i class="fas fa-play"></i></span>
     </button>`;
   }
@@ -885,9 +917,11 @@ document.getElementById('btnCache').addEventListener('click', async () => {
   const ico = document.getElementById('iconCache');
   if (btn.classList.contains('cached')) {
     await idbDel(cacheKey).catch(() => {});
+    cachedKeys.delete(cacheKey);
     revokeObjURL();
     audio.src = audioUrlWorker(y, t, l, cur.n);
     refreshCacheBtn(cacheKey, false);
+    render();
   } else {
     ico.className = 'fas fa-spinner fa-spin';
     btn.disabled = true;
@@ -896,12 +930,14 @@ document.getElementById('btnCache').addEventListener('click', async () => {
       if (!res.ok) throw new Error('fetch failed');
       const blob = await res.blob();
       await idbPut(cacheKey, blob);
+      cachedKeys.add(cacheKey);
       revokeObjURL();
       currentObjURL = URL.createObjectURL(blob);
       const pos = audio.currentTime;
       audio.src = currentObjURL;
       audio.currentTime = pos;
       refreshCacheBtn(cacheKey, true);
+      render();
     } catch {
       ico.className = 'fas fa-download';
     } finally {
@@ -950,6 +986,7 @@ function handleParams() {
 
 async function init() {
   loadDone(); loadDailyTime(); updateDailyTimeBadge();
+  await loadCachedKeys();
   try { await loadCfg(); }
   catch { document.getElementById('tableContainer').innerHTML = '<div class="msg-c err">コンテンツを読み込めませんでした</div>'; return; }
   if (cfg.siteTitle) {
