@@ -8,6 +8,7 @@
   <meta http-equiv="Expires" content="0">
   <title>DKE Medical English</title>
   <link rel="apple-touch-icon" href="icon1.png">
+  <link rel="manifest" href="/manifest.json">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700;800&display=swap" rel="stylesheet">
@@ -1000,5 +1001,6 @@ async function init() {
 }
 init();
 </script>
+<script>if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});</script>
 </body>
 </html>

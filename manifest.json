@@ -1,0 +1,12 @@
+{
+  "name": "DKE Medical English",
+  "short_name": "DKE Audio",
+  "description": "医学英語リスニングプレイヤー",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F3F7FC",
+  "theme_color": "#5B8DEF",
+  "icons": [
+    { "src": "/icon1.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}
