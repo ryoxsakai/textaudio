@@ -140,6 +140,14 @@
     .btn-trans:disabled { background: #EEF1F6; color: #C2CBD9; pointer-events: none; }
 
     /* ── Translation modal ── */
+    .trans-sheet { display: flex; flex-direction: column; max-height: 90dvh; overflow: hidden; }
+    .trans-head { flex-shrink: 0; align-items: center; margin-bottom: 0; padding-bottom: 14px; border-bottom: 1px solid var(--border); }
+    .trans-scroll { flex: 1 1 auto; overflow-y: auto; -webkit-overflow-scrolling: touch; padding-top: 16px; }
+    .trans-tabs { display: flex; gap: 8px; }
+    .trans-tab { border: none; background: var(--primary-lt); color: var(--primary); font-weight: 700; font-size: .85rem; padding: 7px 18px; border-radius: 20px; cursor: pointer; -webkit-tap-highlight-color: transparent; transition: all .15s; }
+    .trans-tab.active { background: var(--grad); color: #fff; }
+    .trans-tab:active { opacity: .8; }
+    .trans-tab:disabled { opacity: .4; pointer-events: none; }
     .trans-body { white-space: pre-wrap; word-break: break-word; font-size: .92rem; line-height: 1.85; color: var(--text); }
 
     /* ── Mobile tweaks ── */
@@ -198,12 +206,15 @@
 
 <!-- Translation modal -->
 <div class="overlay" id="transOverlay" style="z-index:210">
-  <div class="sheet">
-    <div class="pl-header">
-      <div class="pl-title"><i class="fas fa-language" style="color:var(--green);margin-right:8px"></i>和訳</div>
+  <div class="sheet trans-sheet">
+    <div class="pl-header trans-head">
+      <div class="trans-tabs">
+        <button class="trans-tab active" id="transTabTrans" data-tab="trans">和訳</button>
+        <button class="trans-tab" id="transTabAnswer" data-tab="answer">解答</button>
+      </div>
       <button class="btn-close" id="btnTransClose"><i class="fas fa-xmark"></i></button>
     </div>
-    <div class="trans-body" id="transBody"></div>
+    <div class="trans-scroll"><div class="trans-body" id="transBody"></div></div>
   </div>
 </div>
 
@@ -417,7 +428,7 @@ const DEFAULTS = {
 };
 
 let cfg = null, done = {}, cur = null, currentRows = [];
-let currentTransText = null, transToken = 0;
+let currentTransText = null, currentAnsText = null, transToken = 0, transActiveTab = 'trans';
 function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
 function loadDone() { try { done = JSON.parse(localStorage.getItem(DK) || '{}'); } catch { done = {}; } }
@@ -480,8 +491,8 @@ function audioUrlWorker(y, t, l, n) {
   return `${base}/${audioPath(y, t, l, n)}`;
 }
 function translationPath(y, t, l, n) { return `${y.tag}/${t.tag}/${l.tag}/lesson${n}.txt`; }
-async function fetchTranslation(y, t, l, n) {
-  const key = translationPath(y, t, l, n);
+function answerPath(y, t, l, n) { return `${y.tag}/${t.tag}/${l.tag}/lesson${n}.answer.txt`; }
+async function fetchRemoteText(key) {
   const bases = [...new Set([cfg.r2WorkerUrl, cfg.r2BaseUrl].filter(Boolean).map(u => u.replace(/\/$/, '')))];
   for (const b of bases) {
     try {
@@ -714,14 +725,18 @@ async function openPlayer(yId, tId, lId, n) {
   setSpeed(1);
   refreshMarkBtn();
   refreshCacheBtn(cacheKey, !!cached);
-  // Translation: fetch async, enable button only if text exists
+  // Translation / answer: fetch async, enable button only if either exists
   const myTransToken = ++transToken;
-  currentTransText = null;
-  refreshTransBtn(false);
-  fetchTranslation(y, t, l, n).then(text => {
+  currentTransText = null; currentAnsText = null;
+  refreshTransBtn();
+  Promise.all([
+    fetchRemoteText(translationPath(y, t, l, n)),
+    fetchRemoteText(answerPath(y, t, l, n)),
+  ]).then(([tr, ans]) => {
     if (myTransToken !== transToken) return;
-    currentTransText = text && text.trim() ? text : null;
-    refreshTransBtn(!!currentTransText);
+    currentTransText = tr && tr.trim() ? tr : null;
+    currentAnsText = ans && ans.trim() ? ans : null;
+    refreshTransBtn();
   });
   overlay.classList.add('open');
   requestAnimationFrame(() => {
@@ -942,7 +957,7 @@ function closePlayer() {
   currentWaveform = null; currentWaveformKey = null; currentPCM = null;
   const wc = document.getElementById('waveCanvas');
   if (wc) wc.getContext('2d').clearRect(0, 0, wc.width, wc.height);
-  closeTrans(); transToken++; currentTransText = null; refreshTransBtn(false);
+  closeTrans(); transToken++; currentTransText = null; currentAnsText = null; refreshTransBtn();
   overlay.classList.remove('open'); cur = null;
 }
 document.getElementById('btnClose').addEventListener('click', closePlayer);
@@ -997,15 +1012,31 @@ document.getElementById('btnCache').addEventListener('click', async () => {
 });
 document.getElementById('historyOverlay').addEventListener('click', e => { if (e.target === document.getElementById('historyOverlay')) closeHistory(); });
 
-/* ── Translation viewer ── */
-function refreshTransBtn(hasText) {
+/* ── Translation / answer viewer ── */
+function refreshTransBtn() {
   const btn = document.getElementById('btnTrans');
-  if (btn) btn.disabled = !hasText;
+  if (btn) btn.disabled = !(currentTransText || currentAnsText);
 }
+function renderTransContent() {
+  const hasTrans = !!currentTransText, hasAns = !!currentAnsText;
+  if (transActiveTab === 'trans' && !hasTrans && hasAns) transActiveTab = 'answer';
+  if (transActiveTab === 'answer' && !hasAns && hasTrans) transActiveTab = 'trans';
+  const isTrans = transActiveTab !== 'answer';
+  const tabT = document.getElementById('transTabTrans');
+  const tabA = document.getElementById('transTabAnswer');
+  tabT.disabled = !hasTrans; tabA.disabled = !hasAns;
+  tabT.classList.toggle('active', isTrans);
+  tabA.classList.toggle('active', !isTrans);
+  document.getElementById('transBody').textContent = isTrans ? (currentTransText || '') : (currentAnsText || '');
+}
+function setTransTab(tab) { transActiveTab = tab; renderTransContent(); }
 function closeTrans() { document.getElementById('transOverlay').classList.remove('open'); }
+document.getElementById('transTabTrans').addEventListener('click', () => { if (currentTransText) setTransTab('trans'); });
+document.getElementById('transTabAnswer').addEventListener('click', () => { if (currentAnsText) setTransTab('answer'); });
 document.getElementById('btnTrans').addEventListener('click', () => {
-  if (!currentTransText) return;
-  document.getElementById('transBody').textContent = currentTransText;
+  if (!currentTransText && !currentAnsText) return;
+  transActiveTab = currentTransText ? 'trans' : 'answer';
+  renderTransContent();
   document.getElementById('transOverlay').classList.add('open');
 });
 document.getElementById('btnTransClose').addEventListener('click', closeTrans);
