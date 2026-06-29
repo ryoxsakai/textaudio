@@ -132,12 +132,13 @@
     .btn-mark-done { flex: 1; height: 48px; border: none; border-radius: 14px; font-size: .9rem; font-weight: 700; cursor: pointer; background: linear-gradient(135deg, #3FB984 0%, #28B890 100%); color: #fff; -webkit-tap-highlight-color: transparent; transition: opacity .15s; display: flex; align-items: center; justify-content: center; gap: 8px; }
     .btn-mark-done:active { opacity: .8; }
     .btn-mark-done.is-done { background: linear-gradient(135deg, #EAF1FE 0%, #EDE8FD 100%); color: var(--muted); }
-    .btn-cache { width: 48px; height: 48px; flex-shrink: 0; border: none; border-radius: 14px; background: var(--primary-lt); color: var(--primary); font-size: 1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; -webkit-tap-highlight-color: transparent; transition: all .15s; }
+    .btn-cache { width: 48px; height: 48px; flex-shrink: 0; border: none; border-radius: 14px; background: var(--primary-lt); color: var(--primary); font-size: 1rem; cursor: pointer; display: flex; flex-direction: column; gap: 2px; align-items: center; justify-content: center; -webkit-tap-highlight-color: transparent; transition: all .15s; }
     .btn-cache:active { opacity: .75; }
     .btn-cache.cached { background: var(--green-lt); color: var(--green); }
-    .btn-trans { width: 42px; height: 48px; flex-shrink: 0; border: none; border-radius: 14px; background: var(--green-lt); color: var(--green); font-size: .95rem; cursor: pointer; display: flex; align-items: center; justify-content: center; -webkit-tap-highlight-color: transparent; transition: all .15s; }
+    .btn-trans { width: 42px; height: 48px; flex-shrink: 0; border: none; border-radius: 14px; background: var(--green-lt); color: var(--green); font-size: .95rem; cursor: pointer; display: flex; flex-direction: column; gap: 2px; align-items: center; justify-content: center; -webkit-tap-highlight-color: transparent; transition: all .15s; }
     .btn-trans:active { opacity: .75; }
     .btn-trans:disabled { background: #EEF1F6; color: #C2CBD9; pointer-events: none; }
+    .btn-ico-lbl { font-size: .5rem; font-weight: 700; line-height: 1; letter-spacing: .02em; }
 
     /* ── Translation modal ── */
     .trans-sheet { display: flex; flex-direction: column; max-height: 90dvh; overflow: hidden; }
@@ -271,10 +272,10 @@
         <i class="fas fa-check"></i><span>完了にする</span>
       </button>
       <button class="btn-trans" id="btnTrans" title="和訳" disabled>
-        <i class="fas fa-language"></i>
+        <i class="fas fa-language"></i><span class="btn-ico-lbl">訳解</span>
       </button>
       <button class="btn-cache" id="btnCache" title="オフライン保存">
-        <i class="fas fa-download" id="iconCache"></i>
+        <i class="fas fa-download" id="iconCache"></i><span class="btn-ico-lbl">DL</span>
       </button>
     </div>
   </div>
