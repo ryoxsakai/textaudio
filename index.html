@@ -1043,9 +1043,11 @@ function setTransBody(text, indent) {
     body.classList.add('indent');
     body.innerHTML = text.split('\n').map(line => {
       if (line.trim() === '') return '<div class="tr-para">&nbsp;</div>';
-      let flush = false;
+      let flush = false, heading = false;
       if (line.startsWith('@@')) { flush = true; line = line.slice(2); }
-      return `<div class="tr-para${flush ? ' tr-flush' : ''}">${transInline(line)}</div>`;
+      else if (line.startsWith('#')) { flush = true; heading = true; line = line.replace(/^#+\s*/, ''); }
+      const inner = heading ? `<strong>${transInline(line)}</strong>` : transInline(line);
+      return `<div class="tr-para${flush ? ' tr-flush' : ''}">${inner}</div>`;
     }).join('');
   } else {
     // 解答: インデント・記法なし
