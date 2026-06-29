@@ -1035,7 +1035,9 @@ function renderTransContent() {
 }
 // 和訳の簡易記法: 行頭「@@」で字下げなし、「**文字**」で太字
 function transInline(line) {
-  return esc(line).replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+  return esc(line)
+    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+    .replace(/__([^_]+)__/g, '<u>$1</u>');
 }
 function setTransBody(text, indent) {
   const body = document.getElementById('transBody');
