@@ -323,12 +323,17 @@ async function loadCachedKeys() {
   try { const keys = await idbGetAllKeys(); cachedKeys.clear(); keys.forEach(k => cachedKeys.add(k)); } catch {}
 }
 function toggleDlFilter() { dlFilter = !dlFilter; render(); }
-function updateDlBadge() {
+function updateDlBadge(rows) {
   const badge = document.getElementById('dlBadge');
   if (!badge) return;
   badge.className = 'sh-count' + (dlFilter ? ' filter-dl' : '');
   const cnt = document.getElementById('dlBadgeCount');
-  if (cnt) cnt.textContent = cachedKeys.size;
+  if (cnt) {
+    const count = rows
+      ? rows.filter(r => cachedKeys.has(audioPath(r.y, r.t, r.l, r.n))).length
+      : cachedKeys.size;
+    cnt.textContent = count;
+  }
 }
 function revokeObjURL() {
   if (currentObjURL) { URL.revokeObjectURL(currentObjURL); currentObjURL = null; }
@@ -521,7 +526,7 @@ function render() {
   const lF = document.getElementById('filterLevel').value;
   const baseRows = allRows().filter(r => (!yF || r.y.id === yF) && (!tF || r.t.id === tF) && (!lF || r.l.id === lF));
   updateProgress(baseRows);
-  updateDlBadge();
+  updateDlBadge(baseRows);
   let rows = completionFilter === 1 ? baseRows.filter(r =>  done[r.key])
            : completionFilter === 2 ? baseRows.filter(r => !done[r.key])
            : baseRows;
