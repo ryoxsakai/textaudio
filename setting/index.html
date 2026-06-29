@@ -99,6 +99,10 @@
     /* Translation editor */
     .tr-textarea { width: 100%; min-height: 260px; resize: vertical; padding: 12px; border: 1px solid var(--border); border-radius: 10px; font-size: .9rem; line-height: 1.7; font-family: inherit; color: var(--text); background: #fff; }
     .tr-textarea:focus { outline: none; border-color: var(--primary); }
+    .tr-tabs { display: flex; gap: 8px; margin-bottom: 10px; }
+    .tr-tab { border: none; background: var(--primary-lt); color: var(--primary); font-weight: 700; font-size: .85rem; padding: 8px 18px; border-radius: 20px; cursor: pointer; -webkit-tap-highlight-color: transparent; transition: all .15s; }
+    .tr-tab.active { background: var(--grad); color: #fff; }
+    .tr-tab:active { opacity: .8; }
 
     /* Toast */
     .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); padding: 12px 20px; border-radius: 10px; font-size: .875rem; font-weight: 600; z-index: 9999; white-space: nowrap; box-shadow: 0 4px 16px rgba(0,0,0,.15); animation: slideUp .25s ease; }
@@ -321,12 +325,17 @@
 <div class="overlay" id="trOverlay">
   <div class="sheet">
     <div class="pl-header">
-      <div class="pl-title" id="trTitle"><i class="fas fa-language" style="margin-right:6px"></i>和訳</div>
+      <div class="pl-title" id="trTitle"><i class="fas fa-language" style="margin-right:6px"></i>和訳・解答</div>
       <button class="btn-close" id="trClose"><i class="fas fa-xmark"></i></button>
     </div>
-    <p style="font-size:.78rem;color:var(--muted);margin-bottom:10px;">プレーンテキストで和訳を入力してください。空欄で保存すると削除されます。</p>
+    <div class="tr-tabs">
+      <button class="tr-tab active" id="trTabTrans" data-tab="trans">和訳</button>
+      <button class="tr-tab" id="trTabAnswer" data-tab="answer">解答</button>
+    </div>
+    <p style="font-size:.78rem;color:var(--muted);margin-bottom:10px;">プレーンテキストで入力してください。空欄で保存するとその項目は削除されます。保存ボタンで和訳・解答の両方を保存します。</p>
     <textarea class="tr-textarea" id="trTextarea" placeholder="ここに和訳を入力…"></textarea>
-    <button class="btn btn-navy btn-save" id="trSaveBtn" style="margin-top:14px;"><i class="fas fa-floppy-disk fa-fw"></i> 和訳を保存する</button>
+    <textarea class="tr-textarea" id="trAnswerArea" placeholder="ここに解答を入力…" style="display:none;"></textarea>
+    <button class="btn btn-navy btn-save" id="trSaveBtn" style="margin-top:14px;"><i class="fas fa-floppy-disk fa-fw"></i> 和訳・解答を保存する</button>
   </div>
 </div>
 
@@ -959,6 +968,7 @@ function allRows() {
 }
 function audioUrl(y, t, l, n) { return `${cfg.r2BaseUrl}/${y.tag}/${t.tag}/${l.tag}/lesson${n}.mp3`; }
 function translationKey(y, t, l, n) { return `${y.tag}/${t.tag}/${l.tag}/lesson${n}.txt`; }
+function answerKey(y, t, l, n) { return `${y.tag}/${t.tag}/${l.tag}/lesson${n}.answer.txt`; }
 function qrUrl(y, t, l, n) {
   const base = (cfg.siteUrl || BASE_URL).replace(/\/$/, '');
   return `${base}/?year=${y.tag}&term=${t.tag}&level=${l.tag}&lesson=${n}`;
@@ -1033,13 +1043,13 @@ function renderContentList() {
       }).catch(() => {});
     });
   }
-  // Highlight 和訳 buttons for lessons that already have a translation
+  // Highlight 和訳 buttons for lessons that already have a translation or answer
   const trBases = [...new Set([cfg.r2WorkerUrl, cfg.r2BaseUrl].filter(Boolean).map(u => u.replace(/\/$/, '')))];
   if (trBases.length) {
     rows.forEach(r => {
-      fetch(`${trBases[0]}/${translationKey(r.y, r.t, r.l, r.n)}`, { method: 'HEAD' }).then(res => {
-        if (res.ok) { const tb = document.getElementById(`cltr-${r.key}`); if (tb) tb.classList.add('has-tr'); }
-      }).catch(() => {});
+      const markHas = () => { const tb = document.getElementById(`cltr-${r.key}`); if (tb) tb.classList.add('has-tr'); };
+      fetch(`${trBases[0]}/${translationKey(r.y, r.t, r.l, r.n)}`, { method: 'HEAD' }).then(res => { if (res.ok) markHas(); }).catch(() => {});
+      fetch(`${trBases[0]}/${answerKey(r.y, r.t, r.l, r.n)}`, { method: 'HEAD' }).then(res => { if (res.ok) markHas(); }).catch(() => {});
     });
   }
 }
@@ -1078,6 +1088,16 @@ async function fetchTranslationText(key) {
   }
   return '';
 }
+function setTrTab(tab) {
+  const isTrans = tab !== 'answer';
+  document.getElementById('trTabTrans').classList.toggle('active', isTrans);
+  document.getElementById('trTabAnswer').classList.toggle('active', !isTrans);
+  document.getElementById('trTextarea').style.display = isTrans ? '' : 'none';
+  document.getElementById('trAnswerArea').style.display = isTrans ? 'none' : '';
+}
+document.getElementById('trTabTrans').addEventListener('click', () => setTrTab('trans'));
+document.getElementById('trTabAnswer').addEventListener('click', () => setTrTab('answer'));
+
 async function openTranslationEditor(yId, tId, lId, n) {
   const y = cfg.years.find(x => x.id === yId);
   const t = cfg.terms.find(x => x.id === tId);
@@ -1085,17 +1105,22 @@ async function openTranslationEditor(yId, tId, lId, n) {
   if (!y || !t || !l) return;
   trEditing = { y, t, l, n, key: mk(yId, tId, lId, n) };
   document.getElementById('trTitle').innerHTML =
-    `<i class="fas fa-language" style="margin-right:6px"></i>和訳 — ${esc(y.name)} / ${esc(t.name)} / ${esc(l.name)} / 第${n}講`;
+    `<i class="fas fa-language" style="margin-right:6px"></i>${esc(y.name)} / ${esc(t.name)} / ${esc(l.name)} / 第${n}講`;
+  setTrTab('trans');
   const ta = document.getElementById('trTextarea');
-  ta.value = '';
-  ta.placeholder = '読み込み中…';
-  ta.disabled = true;
+  const aa = document.getElementById('trAnswerArea');
+  ta.value = ''; aa.value = '';
+  ta.placeholder = '読み込み中…'; aa.placeholder = '読み込み中…';
+  ta.disabled = true; aa.disabled = true;
   document.getElementById('trOverlay').classList.add('open');
-  const text = await fetchTranslationText(translationKey(y, t, l, n));
+  const [text, answer] = await Promise.all([
+    fetchTranslationText(translationKey(y, t, l, n)),
+    fetchTranslationText(answerKey(y, t, l, n)),
+  ]);
   if (trEditing && trEditing.key === mk(yId, tId, lId, n)) {
-    ta.value = text || '';
-    ta.placeholder = 'ここに和訳を入力…';
-    ta.disabled = false;
+    ta.value = text || ''; aa.value = answer || '';
+    ta.placeholder = 'ここに和訳を入力…'; aa.placeholder = 'ここに解答を入力…';
+    ta.disabled = false; aa.disabled = false;
   }
 }
 function closeTranslationEditor() {
@@ -1123,25 +1148,23 @@ async function deleteTranslation(key) {
 }
 document.getElementById('trClose').addEventListener('click', closeTranslationEditor);
 document.getElementById('trOverlay').addEventListener('click', e => { if (e.target === document.getElementById('trOverlay')) closeTranslationEditor(); });
+async function saveOrDelete(key, text) {
+  if (text.trim()) await saveTranslation(key, text);
+  else await deleteTranslation(key);
+}
 document.getElementById('trSaveBtn').addEventListener('click', async () => {
   if (!trEditing) return;
   const { y, t, l, n, key } = trEditing;
-  const fileKey = translationKey(y, t, l, n);
-  const text = document.getElementById('trTextarea').value;
+  const transText  = document.getElementById('trTextarea').value;
+  const answerText = document.getElementById('trAnswerArea').value;
   const btn = document.getElementById('trSaveBtn');
   btn.disabled = true;
   try {
-    if (text.trim()) {
-      await saveTranslation(fileKey, text);
-      const tb = document.getElementById(`cltr-${key}`);
-      if (tb) tb.classList.add('has-tr');
-      toast('和訳を保存しました');
-    } else {
-      await deleteTranslation(fileKey);
-      const tb = document.getElementById(`cltr-${key}`);
-      if (tb) tb.classList.remove('has-tr');
-      toast('和訳を削除しました');
-    }
+    await saveOrDelete(translationKey(y, t, l, n), transText);
+    await saveOrDelete(answerKey(y, t, l, n), answerText);
+    const tb = document.getElementById(`cltr-${key}`);
+    if (tb) tb.classList.toggle('has-tr', !!(transText.trim() || answerText.trim()));
+    toast('和訳・解答を保存しました');
     closeTranslationEditor();
   } catch (e) {
     toast(`保存に失敗しました: ${e.message}`, 'err');
