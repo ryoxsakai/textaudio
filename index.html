@@ -145,6 +145,10 @@
     .trans-head { flex-shrink: 0; align-items: center; margin-bottom: 0; padding-bottom: 14px; border-bottom: 1px solid var(--border); }
     .trans-scroll { flex: 1 1 auto; overflow-y: auto; -webkit-overflow-scrolling: touch; padding-top: 16px; }
     .trans-tabs { display: flex; gap: 8px; }
+    .trans-head-actions { display: flex; align-items: center; gap: 8px; }
+    .trans-font-btn { height: 32px; min-width: 32px; padding: 0 9px; border: none; background: var(--primary-lt); border-radius: 16px; color: var(--primary); font-size: .8rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 3px; -webkit-tap-highlight-color: transparent; transition: background .15s; }
+    .trans-font-btn:active { background: var(--border); }
+    .trans-font-btn span { font-size: .72rem; line-height: 1; }
     .trans-tab { border: none; background: var(--primary-lt); color: var(--primary); font-weight: 700; font-size: .85rem; padding: 7px 18px; border-radius: 20px; cursor: pointer; -webkit-tap-highlight-color: transparent; transition: all .15s; }
     .trans-tab.active { background: var(--grad); color: #fff; }
     .trans-tab:active { opacity: .8; }
@@ -215,7 +219,10 @@
         <button class="trans-tab active" id="transTabTrans" data-tab="trans">和訳</button>
         <button class="trans-tab" id="transTabAnswer" data-tab="answer">解答</button>
       </div>
-      <button class="btn-close" id="btnTransClose"><i class="fas fa-xmark"></i></button>
+      <div class="trans-head-actions">
+        <button class="trans-font-btn" id="btnTransFont" title="文字サイズを変更"><i class="fas fa-text-height"></i><span id="transFontLvl">2</span></button>
+        <button class="btn-close" id="btnTransClose"><i class="fas fa-xmark"></i></button>
+      </div>
     </div>
     <div class="trans-scroll"><div class="trans-body" id="transBody"></div></div>
   </div>
@@ -432,6 +439,9 @@ const DEFAULTS = {
 
 let cfg = null, done = {}, cur = null, currentRows = [];
 let currentTransText = null, currentAnsText = null, transToken = 0, transActiveTab = 'trans';
+const TRANS_FONT_KEY = 'dke_trans_fontsize';
+const TRANS_FONT_SIZES = ['.82rem', '.92rem', '1.05rem', '1.2rem', '1.4rem'];
+let transFontIdx = 1;
 function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
 function loadDone() { try { done = JSON.parse(localStorage.getItem(DK) || '{}'); } catch { done = {}; } }
@@ -1016,6 +1026,22 @@ document.getElementById('btnCache').addEventListener('click', async () => {
 document.getElementById('historyOverlay').addEventListener('click', e => { if (e.target === document.getElementById('historyOverlay')) closeHistory(); });
 
 /* ── Translation / answer viewer ── */
+function loadTransFont() {
+  const v = parseInt(localStorage.getItem(TRANS_FONT_KEY), 10);
+  if (!isNaN(v) && v >= 0 && v < TRANS_FONT_SIZES.length) transFontIdx = v;
+}
+function applyTransFont() {
+  const body = document.getElementById('transBody');
+  if (body) body.style.fontSize = TRANS_FONT_SIZES[transFontIdx];
+  const lvl = document.getElementById('transFontLvl');
+  if (lvl) lvl.textContent = transFontIdx + 1;
+}
+function cycleTransFont() {
+  transFontIdx = (transFontIdx + 1) % TRANS_FONT_SIZES.length;
+  try { localStorage.setItem(TRANS_FONT_KEY, String(transFontIdx)); } catch {}
+  applyTransFont();
+}
+document.getElementById('btnTransFont').addEventListener('click', cycleTransFont);
 function refreshTransBtn() {
   const btn = document.getElementById('btnTrans');
   if (btn) btn.disabled = !(currentTransText || currentAnsText);
@@ -1031,6 +1057,7 @@ function renderTransContent() {
   tabT.classList.toggle('active', isTrans);
   tabA.classList.toggle('active', !isTrans);
   setTransBody(isTrans ? (currentTransText || '') : (currentAnsText || ''), isTrans);
+  applyTransFont();
 }
 // 和訳の簡易記法: 行頭「@@」で字下げなし、「**文字**」で太字
 function transInline(line) {
@@ -1104,7 +1131,7 @@ function handleParams() {
 }
 
 async function init() {
-  loadDone(); loadDailyTime(); updateDailyTimeBadge();
+  loadDone(); loadDailyTime(); updateDailyTimeBadge(); loadTransFont();
   await loadCachedKeys();
   try { await loadCfg(); }
   catch { document.getElementById('tableContainer').innerHTML = '<div class="msg-c err">コンテンツを読み込めませんでした</div>'; return; }
