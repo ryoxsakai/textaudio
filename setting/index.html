@@ -1147,7 +1147,7 @@ async function deleteTranslation(key) {
   if (!res.ok && res.status !== 404) throw new Error(`HTTP ${res.status}`);
 }
 document.getElementById('trClose').addEventListener('click', closeTranslationEditor);
-document.getElementById('trOverlay').addEventListener('click', e => { if (e.target === document.getElementById('trOverlay')) closeTranslationEditor(); });
+// モーダル外クリックでは閉じない（編集中の内容を守るため）。閉じるは「閉じる」/「保存」ボタンのみ。
 async function saveOrDelete(key, text) {
   if (text.trim()) await saveTranslation(key, text);
   else await deleteTranslation(key);
