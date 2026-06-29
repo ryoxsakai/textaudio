@@ -151,6 +151,7 @@
     .trans-body { white-space: pre-wrap; word-break: break-word; font-size: .92rem; line-height: 1.85; color: var(--text); }
     .trans-body.indent { white-space: normal; }
     .trans-body.indent .tr-para { text-indent: 2em; }
+    .trans-body.indent .tr-para.tr-flush { text-indent: 0; }
 
     /* ── Mobile tweaks ── */
     @media (max-width: 380px) {
@@ -1031,16 +1032,23 @@ function renderTransContent() {
   tabA.classList.toggle('active', !isTrans);
   setTransBody(isTrans ? (currentTransText || '') : (currentAnsText || ''), isTrans);
 }
+// 和訳の簡易記法: 行頭「@@」で字下げなし、「**文字**」で太字
+function transInline(line) {
+  return esc(line).replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+}
 function setTransBody(text, indent) {
   const body = document.getElementById('transBody');
   if (indent) {
-    // 和訳: 段落ごとに2emインデント
+    // 和訳: 段落ごとに2emインデント（記法対応）
     body.classList.add('indent');
-    body.innerHTML = text.split('\n')
-      .map(line => line.trim() === '' ? '<div class="tr-para">&nbsp;</div>' : `<div class="tr-para">${esc(line)}</div>`)
-      .join('');
+    body.innerHTML = text.split('\n').map(line => {
+      if (line.trim() === '') return '<div class="tr-para">&nbsp;</div>';
+      let flush = false;
+      if (line.startsWith('@@')) { flush = true; line = line.slice(2); }
+      return `<div class="tr-para${flush ? ' tr-flush' : ''}">${transInline(line)}</div>`;
+    }).join('');
   } else {
-    // 解答: インデントなし
+    // 解答: インデント・記法なし
     body.classList.remove('indent');
     body.textContent = text;
   }
