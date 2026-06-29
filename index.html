@@ -149,6 +149,8 @@
     .trans-tab:active { opacity: .8; }
     .trans-tab:disabled { opacity: .4; pointer-events: none; }
     .trans-body { white-space: pre-wrap; word-break: break-word; font-size: .92rem; line-height: 1.85; color: var(--text); }
+    .trans-body.indent { white-space: normal; }
+    .trans-body.indent .tr-para { text-indent: 2em; }
 
     /* ── Mobile tweaks ── */
     @media (max-width: 380px) {
@@ -1027,7 +1029,21 @@ function renderTransContent() {
   tabT.disabled = !hasTrans; tabA.disabled = !hasAns;
   tabT.classList.toggle('active', isTrans);
   tabA.classList.toggle('active', !isTrans);
-  document.getElementById('transBody').textContent = isTrans ? (currentTransText || '') : (currentAnsText || '');
+  setTransBody(isTrans ? (currentTransText || '') : (currentAnsText || ''), isTrans);
+}
+function setTransBody(text, indent) {
+  const body = document.getElementById('transBody');
+  if (indent) {
+    // 和訳: 段落ごとに2emインデント
+    body.classList.add('indent');
+    body.innerHTML = text.split('\n')
+      .map(line => line.trim() === '' ? '<div class="tr-para">&nbsp;</div>' : `<div class="tr-para">${esc(line)}</div>`)
+      .join('');
+  } else {
+    // 解答: インデントなし
+    body.classList.remove('indent');
+    body.textContent = text;
+  }
 }
 function setTransTab(tab) { transActiveTab = tab; renderTransContent(); }
 function closeTrans() { document.getElementById('transOverlay').classList.remove('open'); }
