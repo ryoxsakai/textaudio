@@ -135,6 +135,12 @@
     .btn-cache { width: 48px; height: 48px; flex-shrink: 0; border: none; border-radius: 14px; background: var(--primary-lt); color: var(--primary); font-size: 1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; -webkit-tap-highlight-color: transparent; transition: all .15s; }
     .btn-cache:active { opacity: .75; }
     .btn-cache.cached { background: var(--green-lt); color: var(--green); }
+    .btn-trans { width: 42px; height: 48px; flex-shrink: 0; border: none; border-radius: 14px; background: var(--green-lt); color: var(--green); font-size: .95rem; cursor: pointer; display: flex; align-items: center; justify-content: center; -webkit-tap-highlight-color: transparent; transition: all .15s; }
+    .btn-trans:active { opacity: .75; }
+    .btn-trans:disabled { background: #EEF1F6; color: #C2CBD9; pointer-events: none; }
+
+    /* ── Translation modal ── */
+    .trans-body { white-space: pre-wrap; word-break: break-word; font-size: .92rem; line-height: 1.85; color: var(--text); }
 
     /* ── Mobile tweaks ── */
     @media (max-width: 380px) {
@@ -190,6 +196,17 @@
 
 <div class="lesson-list" id="tableContainer"><div class="msg-c">読み込み中…</div></div>
 
+<!-- Translation modal -->
+<div class="overlay" id="transOverlay" style="z-index:210">
+  <div class="sheet">
+    <div class="pl-header">
+      <div class="pl-title"><i class="fas fa-language" style="color:var(--green);margin-right:8px"></i>和訳</div>
+      <button class="btn-close" id="btnTransClose"><i class="fas fa-xmark"></i></button>
+    </div>
+    <div class="trans-body" id="transBody"></div>
+  </div>
+</div>
+
 <!-- History modal -->
 <div class="overlay" id="historyOverlay">
   <div class="sheet">
@@ -238,6 +255,9 @@
     <div class="mark-done-row">
       <button class="btn-mark-done" id="btnMarkDone">
         <i class="fas fa-check"></i><span>完了にする</span>
+      </button>
+      <button class="btn-trans" id="btnTrans" title="和訳" disabled>
+        <i class="fas fa-language"></i>
       </button>
       <button class="btn-cache" id="btnCache" title="オフライン保存">
         <i class="fas fa-download" id="iconCache"></i>
@@ -392,6 +412,7 @@ const DEFAULTS = {
 };
 
 let cfg = null, done = {}, cur = null, currentRows = [];
+let currentTransText = null, transToken = 0;
 function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
 function loadDone() { try { done = JSON.parse(localStorage.getItem(DK) || '{}'); } catch { done = {}; } }
@@ -452,6 +473,19 @@ function audioUrl(y, t, l, n) { return `${cfg.r2BaseUrl}/${audioPath(y, t, l, n)
 function audioUrlWorker(y, t, l, n) {
   const base = cfg.r2WorkerUrl || cfg.r2BaseUrl;
   return `${base}/${audioPath(y, t, l, n)}`;
+}
+function translationPath(y, t, l, n) { return `${y.tag}/${t.tag}/${l.tag}/lesson${n}.txt`; }
+async function fetchTranslation(y, t, l, n) {
+  const key = translationPath(y, t, l, n);
+  const bases = [...new Set([cfg.r2WorkerUrl, cfg.r2BaseUrl].filter(Boolean).map(u => u.replace(/\/$/, '')))];
+  for (const b of bases) {
+    try {
+      const r = await fetch(`${b}/${key}`, { cache: 'no-store' });
+      if (r.ok) return await r.text();
+      if (r.status === 404) return '';
+    } catch {}
+  }
+  return '';
 }
 
 const RING_CIRC = 238.76;
@@ -675,6 +709,15 @@ async function openPlayer(yId, tId, lId, n) {
   setSpeed(1);
   refreshMarkBtn();
   refreshCacheBtn(cacheKey, !!cached);
+  // Translation: fetch async, enable button only if text exists
+  const myTransToken = ++transToken;
+  currentTransText = null;
+  refreshTransBtn(false);
+  fetchTranslation(y, t, l, n).then(text => {
+    if (myTransToken !== transToken) return;
+    currentTransText = text && text.trim() ? text : null;
+    refreshTransBtn(!!currentTransText);
+  });
   overlay.classList.add('open');
   requestAnimationFrame(() => {
     resizeVizCanvas();
@@ -894,6 +937,7 @@ function closePlayer() {
   currentWaveform = null; currentWaveformKey = null; currentPCM = null;
   const wc = document.getElementById('waveCanvas');
   if (wc) wc.getContext('2d').clearRect(0, 0, wc.width, wc.height);
+  closeTrans(); transToken++; currentTransText = null; refreshTransBtn(false);
   overlay.classList.remove('open'); cur = null;
 }
 document.getElementById('btnClose').addEventListener('click', closePlayer);
@@ -947,6 +991,20 @@ document.getElementById('btnCache').addEventListener('click', async () => {
   }
 });
 document.getElementById('historyOverlay').addEventListener('click', e => { if (e.target === document.getElementById('historyOverlay')) closeHistory(); });
+
+/* ── Translation viewer ── */
+function refreshTransBtn(hasText) {
+  const btn = document.getElementById('btnTrans');
+  if (btn) btn.disabled = !hasText;
+}
+function closeTrans() { document.getElementById('transOverlay').classList.remove('open'); }
+document.getElementById('btnTrans').addEventListener('click', () => {
+  if (!currentTransText) return;
+  document.getElementById('transBody').textContent = currentTransText;
+  document.getElementById('transOverlay').classList.add('open');
+});
+document.getElementById('btnTransClose').addEventListener('click', closeTrans);
+document.getElementById('transOverlay').addEventListener('click', e => { if (e.target === document.getElementById('transOverlay')) closeTrans(); });
 
 function getCurIdx() {
   if (!cur) return -1;

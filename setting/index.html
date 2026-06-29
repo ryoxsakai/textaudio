@@ -91,8 +91,14 @@
     .cl-icon-btn:active { opacity: .55; }
     .cl-icon-btn.cl-play { color: var(--primary); }
     .cl-icon-btn.cl-qr  { color: var(--muted); }
+    .cl-icon-btn.cl-tr  { color: var(--green); }
+    .cl-icon-btn.cl-tr.has-tr { background: var(--primary-lt); }
     .cl-icon-btn.cl-del { color: var(--red); }
     .cl-icon-btn:disabled { opacity: .25; pointer-events: none; }
+
+    /* Translation editor */
+    .tr-textarea { width: 100%; min-height: 260px; resize: vertical; padding: 12px; border: 1px solid var(--border); border-radius: 10px; font-size: .9rem; line-height: 1.7; font-family: inherit; color: var(--text); background: #fff; }
+    .tr-textarea:focus { outline: none; border-color: var(--primary); }
 
     /* Toast */
     .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); padding: 12px 20px; border-radius: 10px; font-size: .875rem; font-weight: 600; z-index: 9999; white-space: nowrap; box-shadow: 0 4px 16px rgba(0,0,0,.15); animation: slideUp .25s ease; }
@@ -308,6 +314,19 @@
       <span id="navLabel" style="font-size:.76rem;color:var(--muted);font-weight:600;letter-spacing:.04em;"></span>
       <button class="ctrl-btn" id="btnNextLesson" style="min-width:40px;min-height:40px;font-size:1.1rem;" title="次の講" disabled><i class="fas fa-forward-step"></i></button>
     </div>
+  </div>
+</div>
+
+<!-- Translation editor overlay -->
+<div class="overlay" id="trOverlay">
+  <div class="sheet">
+    <div class="pl-header">
+      <div class="pl-title" id="trTitle"><i class="fas fa-language" style="margin-right:6px"></i>和訳</div>
+      <button class="btn-close" id="trClose"><i class="fas fa-xmark"></i></button>
+    </div>
+    <p style="font-size:.78rem;color:var(--muted);margin-bottom:10px;">プレーンテキストで和訳を入力してください。空欄で保存すると削除されます。</p>
+    <textarea class="tr-textarea" id="trTextarea" placeholder="ここに和訳を入力…"></textarea>
+    <button class="btn btn-navy btn-save" id="trSaveBtn" style="margin-top:14px;"><i class="fas fa-floppy-disk fa-fw"></i> 和訳を保存する</button>
   </div>
 </div>
 
@@ -939,6 +958,7 @@ function allRows() {
   return rows;
 }
 function audioUrl(y, t, l, n) { return `${cfg.r2BaseUrl}/${y.tag}/${t.tag}/${l.tag}/lesson${n}.mp3`; }
+function translationKey(y, t, l, n) { return `${y.tag}/${t.tag}/${l.tag}/lesson${n}.txt`; }
 function qrUrl(y, t, l, n) {
   const base = (cfg.siteUrl || BASE_URL).replace(/\/$/, '');
   return `${base}/?year=${y.tag}&term=${t.tag}&level=${l.tag}&lesson=${n}`;
@@ -995,6 +1015,7 @@ function renderContentList() {
       <td class="ops" style="white-space:nowrap;">
         <button class="cl-icon-btn cl-play" id="clplay-${r.key}" disabled onclick="openPlayer('${r.y.id}','${r.t.id}','${r.l.id}',${r.n})" title="再生"><i class="fas fa-play"></i></button>
         <button class="cl-icon-btn cl-qr" onclick="openQr('${r.y.id}','${r.t.id}','${r.l.id}',${r.n})" title="QRコード"><i class="fas fa-qrcode"></i></button>
+        <button class="cl-icon-btn cl-tr" id="cltr-${r.key}" onclick="openTranslationEditor('${r.y.id}','${r.t.id}','${r.l.id}',${r.n})" title="和訳"><i class="fas fa-language"></i></button>
         <button class="cl-icon-btn cl-del" id="cldel-${r.key}" disabled onclick="deleteLesson('${r.y.id}','${r.t.id}','${r.l.id}',${r.n},'${r.key}')" title="削除"><i class="fas fa-trash"></i></button>
       </td>
     </tr>`;
@@ -1009,6 +1030,15 @@ function renderContentList() {
           const db = document.getElementById(`cldel-${r.key}`);
           if (db) db.disabled = false;
         }
+      }).catch(() => {});
+    });
+  }
+  // Highlight 和訳 buttons for lessons that already have a translation
+  const trBases = [...new Set([cfg.r2WorkerUrl, cfg.r2BaseUrl].filter(Boolean).map(u => u.replace(/\/$/, '')))];
+  if (trBases.length) {
+    rows.forEach(r => {
+      fetch(`${trBases[0]}/${translationKey(r.y, r.t, r.l, r.n)}`, { method: 'HEAD' }).then(res => {
+        if (res.ok) { const tb = document.getElementById(`cltr-${r.key}`); if (tb) tb.classList.add('has-tr'); }
       }).catch(() => {});
     });
   }
@@ -1034,6 +1064,91 @@ async function deleteLesson(yId, tId, lId, n, key) {
     toast(`削除に失敗しました: ${e.message}`, 'err');
   }
 }
+
+/* ── Translation editor ── */
+let trEditing = null;
+async function fetchTranslationText(key) {
+  const bases = [...new Set([cfg.r2WorkerUrl, cfg.r2BaseUrl].filter(Boolean).map(u => u.replace(/\/$/, '')))];
+  for (const b of bases) {
+    try {
+      const r = await fetch(`${b}/${key}`, { cache: 'no-store' });
+      if (r.ok) return await r.text();
+      if (r.status === 404) return '';
+    } catch {}
+  }
+  return '';
+}
+async function openTranslationEditor(yId, tId, lId, n) {
+  const y = cfg.years.find(x => x.id === yId);
+  const t = cfg.terms.find(x => x.id === tId);
+  const l = cfg.levels.find(x => x.id === lId);
+  if (!y || !t || !l) return;
+  trEditing = { y, t, l, n, key: mk(yId, tId, lId, n) };
+  document.getElementById('trTitle').innerHTML =
+    `<i class="fas fa-language" style="margin-right:6px"></i>和訳 — ${esc(y.name)} / ${esc(t.name)} / ${esc(l.name)} / 第${n}講`;
+  const ta = document.getElementById('trTextarea');
+  ta.value = '';
+  ta.placeholder = '読み込み中…';
+  ta.disabled = true;
+  document.getElementById('trOverlay').classList.add('open');
+  const text = await fetchTranslationText(translationKey(y, t, l, n));
+  if (trEditing && trEditing.key === mk(yId, tId, lId, n)) {
+    ta.value = text || '';
+    ta.placeholder = 'ここに和訳を入力…';
+    ta.disabled = false;
+  }
+}
+function closeTranslationEditor() {
+  document.getElementById('trOverlay').classList.remove('open');
+  trEditing = null;
+}
+async function saveTranslation(key, text) {
+  if (cfg.r2WorkerUrl) {
+    const res = await putViaWorker(key, text, 'text/plain; charset=utf-8');
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return;
+  }
+  if (cfg.r2AccountId && cfg.r2AccessKeyId && cfg.r2SecretKey && cfg.r2Bucket) {
+    const url = `https://${cfg.r2AccountId}.r2.cloudflarestorage.com/${cfg.r2Bucket}/${key}`;
+    const res = await signedPut(url, text, 'text/plain; charset=utf-8');
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return;
+  }
+  throw new Error('R2未設定');
+}
+async function deleteTranslation(key) {
+  if (!cfg.r2WorkerUrl) return; // nothing to delete without a worker endpoint
+  const res = await fetch(`${cfg.r2WorkerUrl.replace(/\/$/, '')}/${key}`, { method: 'DELETE' });
+  if (!res.ok && res.status !== 404) throw new Error(`HTTP ${res.status}`);
+}
+document.getElementById('trClose').addEventListener('click', closeTranslationEditor);
+document.getElementById('trOverlay').addEventListener('click', e => { if (e.target === document.getElementById('trOverlay')) closeTranslationEditor(); });
+document.getElementById('trSaveBtn').addEventListener('click', async () => {
+  if (!trEditing) return;
+  const { y, t, l, n, key } = trEditing;
+  const fileKey = translationKey(y, t, l, n);
+  const text = document.getElementById('trTextarea').value;
+  const btn = document.getElementById('trSaveBtn');
+  btn.disabled = true;
+  try {
+    if (text.trim()) {
+      await saveTranslation(fileKey, text);
+      const tb = document.getElementById(`cltr-${key}`);
+      if (tb) tb.classList.add('has-tr');
+      toast('和訳を保存しました');
+    } else {
+      await deleteTranslation(fileKey);
+      const tb = document.getElementById(`cltr-${key}`);
+      if (tb) tb.classList.remove('has-tr');
+      toast('和訳を削除しました');
+    }
+    closeTranslationEditor();
+  } catch (e) {
+    toast(`保存に失敗しました: ${e.message}`, 'err');
+  } finally {
+    btn.disabled = false;
+  }
+});
 
 document.getElementById('saveTitlesBtn').addEventListener('click', async () => {
   document.querySelectorAll('.lt-input').forEach(inp => {
