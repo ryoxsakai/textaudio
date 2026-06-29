@@ -149,8 +149,7 @@
     .trans-tab.active { background: var(--grad); color: #fff; }
     .trans-tab:active { opacity: .8; }
     .trans-tab:disabled { opacity: .4; pointer-events: none; }
-    .trans-body { white-space: pre-wrap; word-break: break-word; font-size: .92rem; line-height: 1.85; color: var(--text); }
-    .trans-body.indent { white-space: normal; }
+    .trans-body { white-space: normal; word-break: break-word; font-size: .92rem; line-height: 1.85; color: var(--text); }
     .trans-body.indent .tr-para { text-indent: 2em; }
     .trans-body.indent .tr-para.tr-flush { text-indent: 0; }
 
@@ -1040,23 +1039,17 @@ function transInline(line) {
     .replace(/__([^_]+)__/g, '<u>$1</u>');
 }
 function setTransBody(text, indent) {
+  // 和訳・解答とも同じ記法を適用。indent=true（和訳）のときだけ段落を2em字下げ。
   const body = document.getElementById('transBody');
-  if (indent) {
-    // 和訳: 段落ごとに2emインデント（記法対応）
-    body.classList.add('indent');
-    body.innerHTML = text.split('\n').map(line => {
-      if (line.trim() === '') return '<div class="tr-para">&nbsp;</div>';
-      let flush = false, heading = false;
-      if (line.startsWith('@@')) { flush = true; line = line.slice(2); }
-      else if (line.startsWith('#')) { flush = true; heading = true; line = line.replace(/^#+\s*/, ''); }
-      const inner = heading ? `<strong>${transInline(line)}</strong>` : transInline(line);
-      return `<div class="tr-para${flush ? ' tr-flush' : ''}">${inner}</div>`;
-    }).join('');
-  } else {
-    // 解答: インデント・記法なし
-    body.classList.remove('indent');
-    body.textContent = text;
-  }
+  body.classList.toggle('indent', !!indent);
+  body.innerHTML = text.split('\n').map(line => {
+    if (line.trim() === '') return '<div class="tr-para">&nbsp;</div>';
+    let flush = false, heading = false;
+    if (line.startsWith('@@')) { flush = true; line = line.slice(2); }
+    else if (line.startsWith('#')) { flush = true; heading = true; line = line.replace(/^#+\s*/, ''); }
+    const inner = heading ? `<strong>${transInline(line)}</strong>` : transInline(line);
+    return `<div class="tr-para${flush ? ' tr-flush' : ''}">${inner}</div>`;
+  }).join('');
 }
 function setTransTab(tab) { transActiveTab = tab; renderTransContent(); }
 function closeTrans() { document.getElementById('transOverlay').classList.remove('open'); }
