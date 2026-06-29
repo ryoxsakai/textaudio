@@ -1042,7 +1042,9 @@ function handleParams() {
   const y = cfg.years.find(x => x.tag === yTag);
   const t = cfg.terms.find(x => x.tag === tTag);
   const l = cfg.levels.find(x => x.tag === lTag);
-  if (!y || !t || !l || n < 1 || n > t.lessons) return;
+  if (!y || !t || !l) return;
+  const lessons = (t.levelLessons || {})[l.id] ?? t.lessons;
+  if (n < 1 || n > lessons) return;
   fetch(audioUrlWorker(y, t, l, n), { method: 'HEAD' })
     .then(res => { if (res.ok) openPlayer(y.id, t.id, l.id, n); })
     .catch(() => {});

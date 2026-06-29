@@ -274,7 +274,7 @@
       <div class="pl-title" id="lvlOverlayTitle">特殊講数設定</div>
       <button class="btn-close" id="lvlOverlayClose"><i class="fas fa-xmark"></i></button>
     </div>
-    <p style="font-size:.8rem;color:var(--muted);margin-bottom:16px;">空欄にすると各学期の標準講数を使用します</p>
+    <p style="font-size:.8rem;color:var(--muted);margin-bottom:16px;">空欄にすると各学期の標準講数を使用します。<strong>0</strong> にするとその学期の一覧に表示されません。</p>
     <div id="lvlOverlayList"></div>
     <button class="btn btn-navy" id="lvlOverlaySave" style="width:100%;height:44px;margin-top:16px;font-size:.875rem;">保存</button>
   </div>
@@ -584,7 +584,7 @@ function openLevelOverride(levelId) {
     return `<div class="lvl-ov-row">
       <span class="lvl-ov-name">${esc(t.name || '（未設定）')}</span>
       <span class="lvl-ov-def">標準 ${t.lessons}講</span>
-      <input class="lvl-ov-input" type="number" min="1" placeholder="${t.lessons}"
+      <input class="lvl-ov-input" type="number" min="0" placeholder="${t.lessons}"
              value="${ov != null ? ov : ''}" id="lvlOv_${t.id}">
     </div>`;
   }).join('');
@@ -602,10 +602,10 @@ document.getElementById('lvlOverlaySave').addEventListener('click', () => {
     const input = document.getElementById(`lvlOv_${t.id}`);
     if (!input) return;
     const val = parseInt(input.value, 10);
-    if (!input.value.trim() || isNaN(val) || val < 1) {
+    if (!input.value.trim() || isNaN(val) || val < 0) {
       delete t.levelLessons[lvlOverrideLevelId];
     } else {
-      t.levelLessons[lvlOverrideLevelId] = val;
+      t.levelLessons[lvlOverrideLevelId] = val; // 0 = その学期で非表示
     }
   });
   closeLevelOverride();
