@@ -119,6 +119,12 @@
     .btn-preset.active { border-color: transparent; background: var(--grad); color: #fff; }
     .btn-preset:active { opacity: .7; }
 
+    /* ── Speed slider ── */
+    .speed-range-wrap { padding: 6px 4px 2px; }
+    .speed-range { width: 100%; height: 4px; appearance: none; -webkit-appearance: none; border-radius: 2px; outline: none; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+    .speed-range::-webkit-slider-thumb { appearance: none; -webkit-appearance: none; width: 24px; height: 24px; background: var(--grad); border-radius: 50%; box-shadow: 0 2px 8px rgba(91,141,239,.4); cursor: pointer; }
+    .speed-range::-moz-range-thumb { width: 24px; height: 24px; background: var(--primary); border-radius: 50%; border: none; box-shadow: 0 2px 8px rgba(91,141,239,.4); cursor: pointer; }
+
     /* ── Lesson nav ── */
     .lesson-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; padding: 0 4px; }
     .lesson-nav .ctrl-btn { min-width: 40px; min-height: 40px; font-size: 1.15rem; }
@@ -269,9 +275,9 @@
       </div>
     </div>
     <div id="speedAltProg" style="display:none;margin-bottom:18px">
-      <div class="prog-wrap" id="altProgWrap">
-        <canvas id="altWaveCanvas" class="wave-canvas"></canvas>
-        <div class="prog-thumb" id="altProgThumb"></div>
+      <div class="speed-label">再生速度 <span id="speedSliderVal">1.0x</span></div>
+      <div class="speed-range-wrap">
+        <input type="range" id="speedRangeInput" class="speed-range" min="0.5" max="2.5" step="0.05" value="1">
       </div>
     </div>
     <div class="lesson-nav">
@@ -646,8 +652,6 @@ function fmt(s) { return isFinite(s) ? Math.floor(s/60) + ':' + String(Math.floo
 function updProg() {
   const p = audio.duration ? (audio.currentTime / audio.duration) * 100 : 0;
   document.getElementById('progThumb').style.left = p + '%';
-  const altThumb = document.getElementById('altProgThumb');
-  if (altThumb) altThumb.style.left = p + '%';
   document.getElementById('curTime').textContent = fmt(audio.currentTime);
 }
 audio.addEventListener('play', () => { lastPlayT = audio.currentTime; });
@@ -678,35 +682,45 @@ document.getElementById('btnPlay').addEventListener('click', () => {
 document.getElementById('btnBack').addEventListener('click', () => { audio.currentTime = Math.max(0, audio.currentTime - 10); });
 document.getElementById('btnFwd').addEventListener('click',  () => { audio.currentTime = Math.min(audio.duration || 0, audio.currentTime + 10); });
 
-let seeking = false, altSeeking = false;
-function seekTo(cx, wrap) {
-  const r = (wrap || document.getElementById('progWrap')).getBoundingClientRect();
+let seeking = false;
+function seekTo(cx) {
+  const r = document.getElementById('progWrap').getBoundingClientRect();
   const p = Math.min(1, Math.max(0, (cx - r.left) / r.width));
   if (audio.duration) audio.currentTime = p * audio.duration;
   updProg();
 }
 const pw = document.getElementById('progWrap');
 pw.addEventListener('mousedown',  e => { seeking = true; seekTo(e.clientX); });
-window.addEventListener('mousemove', e => {
-  if (seeking) seekTo(e.clientX);
-  if (altSeeking) seekTo(e.clientX, document.getElementById('altProgWrap'));
-});
-window.addEventListener('mouseup',   () => { seeking = false; altSeeking = false; });
+window.addEventListener('mousemove', e => { if (seeking) seekTo(e.clientX); });
+window.addEventListener('mouseup',   () => { seeking = false; });
 pw.addEventListener('touchstart', e => { seeking = true; seekTo(e.touches[0].clientX); }, { passive: true });
-window.addEventListener('touchmove', e => {
-  if (seeking) seekTo(e.touches[0].clientX);
-  if (altSeeking) seekTo(e.touches[0].clientX, document.getElementById('altProgWrap'));
-}, { passive: true });
-window.addEventListener('touchend',  () => { seeking = false; altSeeking = false; });
-const altPW = document.getElementById('altProgWrap');
-altPW.addEventListener('mousedown',  e => { altSeeking = true; seekTo(e.clientX, altPW); });
-altPW.addEventListener('touchstart', e => { altSeeking = true; seekTo(e.touches[0].clientX, altPW); }, { passive: true });
+window.addEventListener('touchmove', e => { if (seeking) seekTo(e.touches[0].clientX); }, { passive: true });
+window.addEventListener('touchend',  () => { seeking = false; });
 
+function updateSliderFill(input) {
+  const min = parseFloat(input.min), max = parseFloat(input.max);
+  const pct = ((parseFloat(input.value) - min) / (max - min)) * 100;
+  input.style.background = `linear-gradient(to right, var(--primary) ${pct}%, var(--border) ${pct}%)`;
+}
 function setSpeed(v) {
   audio.playbackRate = v;
   document.querySelectorAll('.btn-preset').forEach(b => b.classList.toggle('active', parseFloat(b.dataset.speed) === v));
+  const slider = document.getElementById('speedRangeInput');
+  if (slider) { slider.value = v; updateSliderFill(slider); }
+  const lbl = document.getElementById('speedSliderVal');
+  if (lbl) lbl.textContent = v % 1 === 0 ? v + '.0x' : v + 'x';
 }
 document.querySelectorAll('.btn-preset').forEach(b => b.addEventListener('click', () => setSpeed(parseFloat(b.dataset.speed))));
+(function() {
+  const slider = document.getElementById('speedRangeInput');
+  function onSliderChange() {
+    const v = parseFloat(slider.value);
+    setSpeed(Math.round(v * 20) / 20);
+  }
+  slider.addEventListener('input', onSliderChange);
+  slider.addEventListener('change', onSliderChange);
+  updateSliderFill(slider);
+})();
 
 function refreshMarkBtn() {
   if (!cur) return;
@@ -904,21 +918,18 @@ function resizeWaveCanvas() {
   c.width  = c.clientWidth  * dpr;
   c.height = c.clientHeight * dpr;
 }
-function resizeAltWaveCanvas() {
-  const c = document.getElementById('altWaveCanvas');
-  if (!c) return;
-  const dpr = window.devicePixelRatio || 1;
-  c.width  = c.clientWidth  * dpr;
-  c.height = c.clientHeight * dpr;
-}
-
 let speedAltMode = false;
 function toggleSpeedAlt() {
   speedAltMode = !speedAltMode;
   document.getElementById('speedSection').style.display = speedAltMode ? 'none' : '';
   document.getElementById('speedAltProg').style.display = speedAltMode ? '' : 'none';
   if (speedAltMode) {
-    requestAnimationFrame(() => { resizeAltWaveCanvas(); drawWaveform(); updProg(); });
+    const slider = document.getElementById('speedRangeInput');
+    slider.value = audio.playbackRate;
+    updateSliderFill(slider);
+    const lbl = document.getElementById('speedSliderVal');
+    const v = audio.playbackRate;
+    lbl.textContent = v % 1 === 0 ? v + '.0x' : v + 'x';
   }
 }
 let lastSpeedRowTap = 0, lastAltProgTap = 0;
@@ -927,12 +938,11 @@ document.getElementById('speedPresetRow').addEventListener('touchend', () => {
   if (now - lastSpeedRowTap < 350) toggleSpeedAlt();
   lastSpeedRowTap = now;
 }, { passive: true });
-document.getElementById('altProgWrap').addEventListener('touchend', e => {
-  if (altSeeking) return;
+document.getElementById('speedAltProg').addEventListener('touchend', () => {
   const now = Date.now();
   if (now - lastAltProgTap < 350) toggleSpeedAlt();
   lastAltProgTap = now;
-});
+}, { passive: true });
 
 function drawWaveformOnCanvas(c) {
   if (!c) return;
@@ -978,7 +988,6 @@ function drawWaveformOnCanvas(c) {
 }
 function drawWaveform() {
   drawWaveformOnCanvas(document.getElementById('waveCanvas'));
-  if (speedAltMode) drawWaveformOnCanvas(document.getElementById('altWaveCanvas'));
 }
 
 async function loadWaveform(url, key) {
