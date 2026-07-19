@@ -106,8 +106,8 @@
     /* ── Onboarding ── */
     @keyframes ob-pulse { 0%,100% { box-shadow: 0 0 0 3px var(--primary), 0 0 0 7px rgba(91,141,239,.3); } 50% { box-shadow: 0 0 0 3px rgba(91,141,239,.55), 0 0 0 9px rgba(91,141,239,.1); } }
     .ob-ring { border-radius: 12px; animation: ob-pulse 1.8s ease-in-out infinite; position: relative; z-index: 1; }
-    .ob-card { position: fixed; left: 50%; transform: translateX(-50%); bottom: -260px; width: min(88%, 430px); z-index: 9000; background: #fff; border-radius: 20px; padding: 18px 18px 16px; box-shadow: 0 -2px 40px rgba(60,90,160,.2), 0 8px 32px rgba(60,90,160,.12); transition: bottom .32s cubic-bezier(.4,0,.2,1); }
-    .ob-card.open { bottom: 20px; }
+    .ob-card { position: fixed; left: 50%; transform: translateX(-50%); top: -260px; width: min(88%, 430px); z-index: 9000; background: #fff; border-radius: 20px; padding: 18px 18px 16px; box-shadow: 0 4px 40px rgba(60,90,160,.2), 0 8px 32px rgba(60,90,160,.12); transition: top .32s cubic-bezier(.4,0,.2,1); }
+    .ob-card.open { top: 20px; }
     .ob-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
     .ob-num { font-size: .68rem; font-weight: 700; color: var(--muted); letter-spacing: .04em; }
     .ob-x { width: 24px; height: 24px; border: none; background: var(--primary-lt); border-radius: 50%; color: var(--primary); font-size: .72rem; cursor: pointer; display: flex; align-items: center; justify-content: center; -webkit-tap-highlight-color: transparent; }
