@@ -327,6 +327,21 @@
   </div>
 </div>
 
+<!-- Onboarding card -->
+<div id="obCard" class="ob-card" aria-live="polite">
+  <div class="ob-head">
+    <span class="ob-num" id="obNum"></span>
+    <button class="ob-x" id="obX" aria-label="閉じる"><i class="fas fa-xmark"></i></button>
+  </div>
+  <div class="ob-title" id="obTitle"></div>
+  <div class="ob-desc" id="obDesc"></div>
+  <div class="ob-nav">
+    <button class="ob-arrow" id="obBack" aria-label="戻る"><i class="fas fa-chevron-left"></i></button>
+    <div class="ob-dots" id="obDots"></div>
+    <button class="ob-next" id="obNext">次へ <i class="fas fa-chevron-right"></i></button>
+  </div>
+</div>
+
 <script>
 /* ── IndexedDB audio cache ── */
 const IDB_NAME = 'dke_audio', IDB_STORE = 'blobs', IDB_VER = 1;
@@ -1296,20 +1311,5 @@ async function init() {
 init();
 </script>
 <script>if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});</script>
-
-<!-- Onboarding card -->
-<div id="obCard" class="ob-card" aria-live="polite">
-  <div class="ob-head">
-    <span class="ob-num" id="obNum"></span>
-    <button class="ob-x" id="obX" aria-label="閉じる"><i class="fas fa-xmark"></i></button>
-  </div>
-  <div class="ob-title" id="obTitle"></div>
-  <div class="ob-desc" id="obDesc"></div>
-  <div class="ob-nav">
-    <button class="ob-arrow" id="obBack" aria-label="戻る"><i class="fas fa-chevron-left"></i></button>
-    <div class="ob-dots" id="obDots"></div>
-    <button class="ob-next" id="obNext">次へ <i class="fas fa-chevron-right"></i></button>
-  </div>
-</div>
 </body>
 </html>
