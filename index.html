@@ -98,6 +98,31 @@
     .pl-title { font-size: .92rem; font-weight: 700; color: var(--text); line-height: 1.45; flex: 1; padding-right: 12px; }
     .btn-close { width: 32px; height: 32px; border: none; background: var(--primary-lt); border-radius: 50%; font-size: .85rem; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: var(--primary); }
     .btn-close:active { background: var(--border); }
+    .pl-hd-btns { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+    .pl-hd-btns .btn-close { width: 26px; height: 26px; font-size: .78rem; }
+    .btn-help { width: 26px; height: 26px; border: none; background: var(--primary-lt); border-radius: 50%; font-size: .8rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: var(--primary); -webkit-tap-highlight-color: transparent; }
+    .btn-help:active { background: var(--border); }
+
+    /* ── Onboarding ── */
+    @keyframes ob-pulse { 0%,100% { box-shadow: 0 0 0 3px var(--primary), 0 0 0 7px rgba(91,141,239,.3); } 50% { box-shadow: 0 0 0 3px rgba(91,141,239,.55), 0 0 0 9px rgba(91,141,239,.1); } }
+    .ob-ring { border-radius: 12px; animation: ob-pulse 1.8s ease-in-out infinite; position: relative; z-index: 1; }
+    .ob-card { position: fixed; left: 50%; transform: translateX(-50%); bottom: -260px; width: min(88%, 430px); z-index: 9000; background: #fff; border-radius: 20px; padding: 18px 18px 16px; box-shadow: 0 -2px 40px rgba(60,90,160,.2), 0 8px 32px rgba(60,90,160,.12); transition: bottom .32s cubic-bezier(.4,0,.2,1); }
+    .ob-card.open { bottom: 20px; }
+    .ob-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+    .ob-num { font-size: .68rem; font-weight: 700; color: var(--muted); letter-spacing: .04em; }
+    .ob-x { width: 24px; height: 24px; border: none; background: var(--primary-lt); border-radius: 50%; color: var(--primary); font-size: .72rem; cursor: pointer; display: flex; align-items: center; justify-content: center; -webkit-tap-highlight-color: transparent; }
+    .ob-x:active { background: var(--border); }
+    .ob-title { font-size: .98rem; font-weight: 700; color: var(--text); margin-bottom: 7px; }
+    .ob-desc { font-size: .82rem; color: var(--muted); line-height: 1.65; margin-bottom: 16px; }
+    .ob-nav { display: flex; align-items: center; gap: 10px; }
+    .ob-arrow { width: 40px; height: 40px; border: none; background: var(--primary-lt); border-radius: 50%; color: var(--primary); font-size: .92rem; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; -webkit-tap-highlight-color: transparent; transition: background .15s; }
+    .ob-arrow:active { background: var(--border); }
+    .ob-arrow:disabled { opacity: .3; pointer-events: none; }
+    .ob-dots { flex: 1; display: flex; justify-content: center; gap: 6px; align-items: center; }
+    .ob-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--border); transition: background .2s, transform .2s; }
+    .ob-dot.active { background: var(--primary); transform: scale(1.2); }
+    .ob-next { flex: 1; height: 40px; border: none; background: var(--grad); color: #fff; border-radius: 12px; font-size: .88rem; font-weight: 700; cursor: pointer; -webkit-tap-highlight-color: transparent; display: flex; align-items: center; justify-content: center; gap: 6px; }
+    .ob-next:active { opacity: .85; }
 
     .prog-wrap { position: relative; height: 44px; display: flex; align-items: center; cursor: pointer; touch-action: none; user-select: none; margin-bottom: 2px; }
     .wave-canvas { position: absolute; left: 0; width: 100%; height: 38px; top: 50%; transform: translateY(-50%); border-radius: 8px; background: var(--primary-lt); pointer-events: none; display: block; }
@@ -250,7 +275,10 @@
   <div class="sheet">
     <div class="pl-header">
       <div class="pl-title" id="playerTitle">-</div>
-      <button class="btn-close" id="btnClose"><i class="fas fa-xmark"></i></button>
+      <div class="pl-hd-btns">
+        <button class="btn-help" id="btnHelp" title="使い方"><i class="fas fa-question"></i></button>
+        <button class="btn-close" id="btnClose"><i class="fas fa-xmark"></i></button>
+      </div>
     </div>
     <audio id="audio" preload="metadata" crossorigin="anonymous"></audio>
     <div class="prog-wrap" id="progWrap">
@@ -259,7 +287,7 @@
     </div>
     <div class="time-row"><span id="curTime">0:00</span><span id="durTime">0:00</span></div>
     <canvas id="vizCanvas"></canvas>
-    <div class="ctrl-row">
+    <div class="ctrl-row" id="ctrlRow">
       <button class="ctrl-btn" id="btnBack" title="10秒戻る"><i class="fas fa-rotate-left"></i></button>
       <button class="ctrl-btn ctrl-btn-main" id="btnPlay"><i class="fas fa-play" id="iconPlay"></i></button>
       <button class="ctrl-btn" id="btnFwd" title="10秒進む"><i class="fas fa-rotate-right"></i></button>
@@ -280,7 +308,7 @@
         <input type="range" id="speedRangeInput" class="speed-range" min="0.5" max="2.5" step="0.05" value="1">
       </div>
     </div>
-    <div class="lesson-nav">
+    <div class="lesson-nav" id="lessonNav">
       <button class="ctrl-btn" id="btnPrevLesson" title="前の講" disabled><i class="fas fa-backward-step"></i></button>
       <span class="nav-label" id="navLabel"></span>
       <button class="ctrl-btn" id="btnNextLesson" title="次の講" disabled><i class="fas fa-forward-step"></i></button>
@@ -788,6 +816,7 @@ async function openPlayer(yId, tId, lId, n) {
     resizeWaveCanvas();
     loadWaveform(audio.src, mk(yId, tId, lId, n));
   });
+  if (!localStorage.getItem(OB_KEY)) setTimeout(startOnboarding, 500);
 }
 // ─── Visualizer (PCM + FFT, iOS-safe) ─────────────────────
 // Driven by the decoded PCM buffer synced to playback time, so it works
@@ -1033,6 +1062,7 @@ function closePlayer() {
     document.getElementById('speedSection').style.display = '';
     document.getElementById('speedAltProg').style.display = 'none';
   }
+  obHide();
   closeTrans(); transToken++; currentTransText = null; currentAnsText = null; refreshTransBtn();
   overlay.classList.remove('open'); cur = null;
 }
@@ -1193,6 +1223,62 @@ function handleParams() {
     .catch(() => {});
 }
 
+/* ── Onboarding ── */
+const OB_KEY = 'dke_ob_done';
+const OB_STEPS = [
+  { id: 'progWrap',     title: '波形バー・シーク',   desc: 'タップ・ドラッグして再生位置を移動できます。' },
+  { id: 'vizCanvas',    title: 'ビジュアライザー',    desc: '再生中にリアルタイムで音声の周波数スペクトルを表示します。' },
+  { id: 'ctrlRow',      title: '再生コントロール',    desc: '中央ボタンで再生・一時停止。左右で10秒ずつ移動します。' },
+  { id: 'speedSection', idAlt: 'speedAltProg', title: '再生速度', desc: 'ボタンで速度を選択。速度ボタンをダブルタップするとスライダーに切り替わり細かく調整できます。' },
+  { id: 'lessonNav',    title: '講の移動',          desc: '左右ボタンで同じレベルの前後の講に移動できます。' },
+  { id: 'btnMarkDone',  title: '完了マーク',         desc: '聴き終えた講を「完了」としてマークします。一覧の進捗管理に使えます。' },
+  { id: 'btnTrans',     title: '和訳・解答',         desc: '和訳と解答を表示します。再生中も閲覧できます（和訳がない場合はグレー表示）。' },
+  { id: 'btnCache',     title: 'オフライン保存',      desc: 'タップして音声をデバイスに保存します。保存済みはチェックマークに変わり、オフラインでも再生できます。' },
+];
+let obStep = 0, obRingEl = null;
+function obClearRing() {
+  if (obRingEl) { obRingEl.classList.remove('ob-ring'); obRingEl = null; }
+}
+function obShow(step) {
+  obStep = step;
+  const s = OB_STEPS[step];
+  let el = document.getElementById(s.id);
+  if (s.idAlt && el && el.style.display === 'none') el = document.getElementById(s.idAlt);
+  obClearRing();
+  if (el) { el.classList.add('ob-ring'); obRingEl = el; el.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }
+  document.getElementById('obNum').textContent = `${step + 1} / ${OB_STEPS.length}`;
+  document.getElementById('obTitle').textContent = s.title;
+  document.getElementById('obDesc').textContent = s.desc;
+  document.querySelectorAll('.ob-dot').forEach((d, i) => d.classList.toggle('active', i === step));
+  document.getElementById('obBack').disabled = step === 0;
+  const nx = document.getElementById('obNext');
+  if (step === OB_STEPS.length - 1) {
+    nx.innerHTML = '完了 <i class="fas fa-check"></i>';
+  } else {
+    nx.innerHTML = '次へ <i class="fas fa-chevron-right"></i>';
+  }
+}
+function startOnboarding() {
+  const card = document.getElementById('obCard');
+  document.getElementById('obDots').innerHTML = OB_STEPS.map(() => '<div class="ob-dot"></div>').join('');
+  card.classList.add('open');
+  obShow(0);
+}
+function obHide() {
+  obClearRing();
+  document.getElementById('obCard').classList.remove('open');
+}
+function stopOnboarding() {
+  obHide();
+  try { localStorage.setItem(OB_KEY, '1'); } catch {}
+}
+document.getElementById('btnHelp').addEventListener('click', startOnboarding);
+document.getElementById('obBack').addEventListener('click', () => { if (obStep > 0) obShow(obStep - 1); });
+document.getElementById('obNext').addEventListener('click', () => {
+  if (obStep < OB_STEPS.length - 1) obShow(obStep + 1); else stopOnboarding();
+});
+document.getElementById('obX').addEventListener('click', stopOnboarding);
+
 async function init() {
   loadDone(); loadDailyTime(); updateDailyTimeBadge(); loadTransFont();
   await loadCachedKeys();
@@ -1210,5 +1296,20 @@ async function init() {
 init();
 </script>
 <script>if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});</script>
+
+<!-- Onboarding card -->
+<div id="obCard" class="ob-card" aria-live="polite">
+  <div class="ob-head">
+    <span class="ob-num" id="obNum"></span>
+    <button class="ob-x" id="obX" aria-label="閉じる"><i class="fas fa-xmark"></i></button>
+  </div>
+  <div class="ob-title" id="obTitle"></div>
+  <div class="ob-desc" id="obDesc"></div>
+  <div class="ob-nav">
+    <button class="ob-arrow" id="obBack" aria-label="戻る"><i class="fas fa-chevron-left"></i></button>
+    <div class="ob-dots" id="obDots"></div>
+    <button class="ob-next" id="obNext">次へ <i class="fas fa-chevron-right"></i></button>
+  </div>
+</div>
 </body>
 </html>
