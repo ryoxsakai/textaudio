@@ -75,6 +75,9 @@
     .play-fab i { margin-left: 2px; }
     .lesson-card:disabled .play-fab { background: #CFD9E8; box-shadow: none; }
     .lesson-card:disabled .lc-num, .lesson-card:disabled .lc-title { color: var(--muted); }
+    .lesson-card.text-only .play-fab { background: linear-gradient(135deg, #3FB984 0%, #28B890 100%); box-shadow: 0 4px 12px rgba(63,185,132,.35); }
+    .lesson-card.text-only .play-fab i { margin-left: 0; }
+    .lc-status.text-only { color: var(--green); }
 
     .msg-c { text-align: center; padding: 48px 20px; color: var(--muted); font-size: .9rem; }
     .msg-c.err { color: var(--red); }
@@ -494,6 +497,7 @@ const DEFAULTS = {
 
 let cfg = null, done = {}, cur = null, currentRows = [];
 let currentTransText = null, currentAnsText = null, transToken = 0, transActiveTab = 'trans';
+let transStandalone = false; // プレイヤーを介さず「解説のみ」で開いているか
 const TRANS_FONT_KEY = 'dke_trans_fontsize';
 const TRANS_FONT_SIZES = ['.82rem', '.92rem', '1.05rem', '1.2rem', '1.4rem'];
 let transFontIdx = 1;
@@ -571,6 +575,41 @@ async function fetchRemoteText(key) {
   }
   return '';
 }
+async function remoteExists(key) {
+  const bases = [...new Set([cfg.r2WorkerUrl, cfg.r2BaseUrl].filter(Boolean).map(u => u.replace(/\/$/, '')))];
+  for (const b of bases) {
+    try {
+      const r = await fetch(`${b}/${key}`, { method: 'HEAD' });
+      if (r.ok) return true;
+      if (r.status === 404) return false;
+    } catch {}
+  }
+  return false;
+}
+// 音声が存在するか（worker → 直リンクの順に試す）
+async function hasAudio(y, t, l, n) {
+  const urls = [audioUrlWorker(y, t, l, n)];
+  if (cfg.r2BaseUrl) urls.push(audioUrl(y, t, l, n));
+  for (const u of [...new Set(urls)]) {
+    try { const r = await fetch(u, { method: 'HEAD' }); if (r.ok) return true; } catch {}
+  }
+  return false;
+}
+// 和訳・解答のどちらかが存在するか
+async function hasLessonText(y, t, l, n) {
+  const [tr, ans] = await Promise.all([
+    remoteExists(translationPath(y, t, l, n)),
+    remoteExists(answerPath(y, t, l, n)),
+  ]);
+  return tr || ans;
+}
+async function fetchLessonTexts(y, t, l, n) {
+  const [tr, ans] = await Promise.all([
+    fetchRemoteText(translationPath(y, t, l, n)),
+    fetchRemoteText(answerPath(y, t, l, n)),
+  ]);
+  return { tr: tr && tr.trim() ? tr : null, ans: ans && ans.trim() ? ans : null };
+}
 
 const RING_CIRC = 238.76;
 let completionFilter = 0; // 0=all 1=done 2=undone
@@ -619,7 +658,7 @@ function render() {
     const isCached = cachedKeys.has(audioPath(r.y, r.t, r.l, r.n));
     const dlMark = isCached ? '<i class="fas fa-download lc-dl"></i> ' : '';
     const status = d ? '<i class="fas fa-circle-check"></i> 完了' : '未再生';
-    h += `<button class="lesson-card${d ? ' is-done' : ''}" id="card-${r.key}" disabled onclick="openPlayer('${r.y.id}','${r.t.id}','${r.l.id}',${r.n})">
+    h += `<button class="lesson-card${d ? ' is-done' : ''}" id="card-${r.key}" disabled onclick="openLesson('${r.y.id}','${r.t.id}','${r.l.id}',${r.n})">
       <span class="lc-num">第${r.n}講</span>
       <span class="lc-title${lt ? '' : ' empty'}">${lt ? esc(lt) : 'タイトル未設定'}</span>
       <span class="lc-status${d ? ' done' : ''}">${dlMark}${status}</span>
@@ -628,17 +667,29 @@ function render() {
   }
   con.innerHTML = h;
   rows.forEach(r => {
-    const enablePlay = () => {
-      const btn = document.getElementById(`card-${r.key}`);
-      if (btn) btn.disabled = false;
-    };
-    fetch(audioUrlWorker(r.y, r.t, r.l, r.n), { method: 'HEAD' })
-      .then(res => { if (res.ok) enablePlay(); else throw new Error(); })
-      .catch(() => {
-        const u = audioUrl(r.y, r.t, r.l, r.n);
-        if (u !== audioUrlWorker(r.y, r.t, r.l, r.n))
-          fetch(u, { method: 'HEAD' }).then(res => { if (res.ok) enablePlay(); }).catch(() => {});
+    const card = () => document.getElementById(`card-${r.key}`);
+    hasAudio(r.y, r.t, r.l, r.n).then(ok => {
+      if (ok) {
+        textOnlyKeys.delete(r.key);
+        const b = card(); if (b) b.disabled = false;
+        return;
+      }
+      // 音声なし: 和訳・解答があれば「解説のみ」として開けるようにする
+      return hasLessonText(r.y, r.t, r.l, r.n).then(hasText => {
+        if (!hasText) return;
+        textOnlyKeys.add(r.key);
+        const b = card(); if (!b) return;
+        b.disabled = false;
+        b.classList.add('text-only');
+        const fab = b.querySelector('.play-fab');
+        if (fab) fab.innerHTML = '<i class="fas fa-book-open"></i>';
+        const st = b.querySelector('.lc-status');
+        if (st && !done[r.key]) {
+          st.className = 'lc-status text-only';
+          st.innerHTML = '<i class="fas fa-book-open"></i> 解説のみ';
+        }
       });
+    }).catch(() => {});
   });
 }
 
@@ -780,6 +831,28 @@ document.getElementById('btnMarkDone').addEventListener('click', () => {
   refreshMarkBtn();
 });
 
+// 音声なし・和訳／解答ありの講は「解説のみ」モーダルで開く
+const textOnlyKeys = new Set();
+function openLesson(yId, tId, lId, n) {
+  if (textOnlyKeys.has(mk(yId, tId, lId, n))) openTextOnly(yId, tId, lId, n);
+  else openPlayer(yId, tId, lId, n);
+}
+async function openTextOnly(yId, tId, lId, n) {
+  const y = cfg.years.find(x => x.id === yId);
+  const t = cfg.terms.find(x => x.id === tId);
+  const l = cfg.levels.find(x => x.id === lId);
+  if (!y || !t || !l) return;
+  const myToken = ++transToken;
+  const { tr, ans } = await fetchLessonTexts(y, t, l, n);
+  if (myToken !== transToken) return;
+  if (!tr && !ans) return;
+  currentTransText = tr; currentAnsText = ans;
+  transStandalone = true;
+  transActiveTab = tr ? 'trans' : 'answer';
+  renderTransContent();
+  document.getElementById('transOverlay').classList.add('open');
+}
+
 async function openPlayer(yId, tId, lId, n) {
   const y = cfg.years.find(x => x.id === yId);
   const t = cfg.terms.find(x => x.id === tId);
@@ -815,6 +888,7 @@ async function openPlayer(yId, tId, lId, n) {
   // Translation / answer: fetch async, enable button only if either exists
   const myTransToken = ++transToken;
   currentTransText = null; currentAnsText = null;
+  transStandalone = false;
   refreshTransBtn();
   Promise.all([
     fetchRemoteText(translationPath(y, t, l, n)),
@@ -1187,7 +1261,15 @@ function setTransBody(text, indent) {
   }).join('');
 }
 function setTransTab(tab) { transActiveTab = tab; renderTransContent(); }
-function closeTrans() { document.getElementById('transOverlay').classList.remove('open'); }
+function closeTrans() {
+  document.getElementById('transOverlay').classList.remove('open');
+  if (transStandalone) {
+    transStandalone = false;
+    transToken++;
+    currentTransText = null; currentAnsText = null;
+    refreshTransBtn();
+  }
+}
 document.getElementById('transTabTrans').addEventListener('click', () => { if (currentTransText) setTransTab('trans'); });
 document.getElementById('transTabAnswer').addEventListener('click', () => { if (currentAnsText) setTransTab('answer'); });
 document.getElementById('btnTrans').addEventListener('click', () => {
@@ -1223,7 +1305,7 @@ document.getElementById('btnNextLesson').addEventListener('click', () => {
 });
 overlay.addEventListener('click', e => { if (e.target === overlay) closePlayer(); });
 
-function handleParams() {
+async function handleParams() {
   const p = new URLSearchParams(location.search);
   const yTag = p.get('year'), tTag = p.get('term'), lTag = p.get('level'), n = parseInt(p.get('lesson'), 10);
   if (!yTag || !tTag || !lTag || !n) return;
@@ -1233,9 +1315,10 @@ function handleParams() {
   if (!y || !t || !l) return;
   const lessons = (t.levelLessons || {})[l.id] ?? t.lessons;
   if (n < 1 || n > lessons) return;
-  fetch(audioUrlWorker(y, t, l, n), { method: 'HEAD' })
-    .then(res => { if (res.ok) openPlayer(y.id, t.id, l.id, n); })
-    .catch(() => {});
+  if (await hasAudio(y, t, l, n)) { openPlayer(y.id, t.id, l.id, n); return; }
+  // 音声なし: 和訳・解答があれば解説モーダルのみ開く
+  textOnlyKeys.add(mk(y.id, t.id, l.id, n));
+  openTextOnly(y.id, t.id, l.id, n);
 }
 
 /* ── Onboarding ── */
