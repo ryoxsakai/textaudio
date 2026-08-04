@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>和訳・解答の一括取り込み</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root { --primary:#5B8DEF; --primary-lt:#EAF1FE; --green:#3FB984; --green-lt:#E7F7F0;
+          --red:#E07A7A; --border:#DCE6F4; --bg:#F3F7FC; --text:#28324A; --muted:#95A3BA; }
+  body { font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Hiragino Sans",sans-serif;
+         background:var(--bg); color:var(--text); padding:20px 16px 60px; }
+  .wrap { max-width:520px; margin:0 auto; }
+  h1 { font-size:1.15rem; margin-bottom:6px; display:flex; align-items:center; gap:9px; }
+  h1 i { color:var(--primary); }
+  .sub { font-size:.82rem; color:var(--muted); line-height:1.7; margin-bottom:20px; }
+  .card { background:#fff; border-radius:16px; padding:18px; margin-bottom:14px;
+          box-shadow:0 3px 14px rgba(80,120,200,.08); }
+  label { display:block; font-size:.76rem; font-weight:700; color:var(--muted);
+          margin-bottom:6px; letter-spacing:.03em; }
+  select { width:100%; height:44px; border:1.5px solid var(--border); border-radius:11px;
+           padding:0 11px; font-size:.95rem; font-family:inherit; color:var(--text);
+           background:#fff; margin-bottom:14px; }
+  select:disabled { background:var(--bg); color:var(--muted); }
+  .path { font-size:.76rem; color:var(--primary); background:var(--primary-lt);
+          border-radius:9px; padding:9px 11px; word-break:break-all; font-family:ui-monospace,monospace; }
+  button { width:100%; height:50px; border:none; border-radius:13px; font-size:.95rem;
+           font-weight:700; font-family:inherit; cursor:pointer; color:#fff;
+           background:linear-gradient(135deg,#5B8DEF 0%,#8B7FE8 100%);
+           display:flex; align-items:center; justify-content:center; gap:8px; }
+  button:disabled { background:#CFD9E8; cursor:default; }
+  .log { margin-top:14px; font-size:.8rem; line-height:1.9; max-height:340px; overflow-y:auto; }
+  .log div { display:flex; align-items:center; gap:8px; }
+  .log .ok i { color:var(--green); }
+  .log .err { color:var(--red); }
+  .log .err i { color:var(--red); }
+  .log .run i { color:var(--muted); }
+  .note { font-size:.76rem; color:var(--muted); line-height:1.7; margin-top:12px; }
+  a { color:var(--primary); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1><i class="fas fa-file-import"></i> 和訳・解答の一括取り込み</h1>
+  <p class="sub">
+    前期「医学部の長文読解 Super Basic lev.」全11講の和訳・解答を、
+    選択した 年度 / 学期 / レベル に一括アップロードします。
+  </p>
+
+  <div class="card">
+    <label>年度</label>
+    <select id="selYear" disabled></select>
+    <label>学期</label>
+    <select id="selTerm" disabled></select>
+    <label>レベル</label>
+    <select id="selLevel" disabled></select>
+    <div class="path" id="pathPreview">設定を読み込み中…</div>
+  </div>
+
+  <div class="card">
+    <button id="btnRun" disabled><i class="fas fa-cloud-arrow-up"></i> <span>アップロード</span></button>
+    <div class="log" id="log"></div>
+    <p class="note">
+      既存の和訳・解答は上書きされます。完了後は
+      <a href="./">コンテンツ設定</a> で内容を確認できます。
+    </p>
+  </div>
+</div>
+
+<script>
+const LESSONS = 11;
+const SRC_DIR = '../content/super-basic';
+
+let cfg = null, workerUrl = '';
+
+const $ = id => document.getElementById(id);
+function log(msg, cls) {
+  const d = document.createElement('div');
+  d.className = cls || 'run';
+  const ico = cls === 'ok' ? 'fa-circle-check' : cls === 'err' ? 'fa-circle-xmark' : 'fa-spinner fa-spin';
+  d.innerHTML = `<i class="fas ${ico}"></i><span>${msg}</span>`;
+  $('log').appendChild(d);
+  $('log').scrollTop = $('log').scrollHeight;
+  return d;
+}
+function setLog(el, msg, cls) {
+  el.className = cls;
+  const ico = cls === 'ok' ? 'fa-circle-check' : 'fa-circle-xmark';
+  el.innerHTML = `<i class="fas ${ico}"></i><span>${msg}</span>`;
+}
+
+function fill(sel, items) {
+  sel.innerHTML = items.map(x => `<option value="${x.id}">${x.name}</option>`).join('');
+  sel.disabled = false;
+}
+function pick(sel, items) { return items.find(x => x.id === sel.value); }
+
+function updatePath() {
+  if (!cfg) return;
+  const y = pick($('selYear'), cfg.years);
+  const t = pick($('selTerm'), cfg.terms);
+  const l = pick($('selLevel'), cfg.levels);
+  $('pathPreview').textContent = (y && t && l)
+    ? `${y.tag}/${t.tag}/${l.tag}/lesson1〜${LESSONS}.txt (+ .answer.txt)`
+    : '—';
+}
+
+async function loadCfg() {
+  const local = JSON.parse(localStorage.getItem('dke_settings') || 'null');
+  const bases = [...new Set([
+    local?.r2WorkerUrl, local?.r2BaseUrl, 'https://textaudio.ryoxsakai.workers.dev'
+  ].filter(Boolean).map(u => u.replace(/\/$/, '')))];
+
+  for (const b of bases) {
+    try {
+      const r = await fetch(`${b}/settings.json`, { cache: 'no-store' });
+      if (!r.ok) continue;
+      cfg = await r.json();
+      workerUrl = (cfg.r2WorkerUrl || local?.r2WorkerUrl || b).replace(/\/$/, '');
+      break;
+    } catch {}
+  }
+  if (!cfg) { $('pathPreview').textContent = '設定を読み込めませんでした'; return; }
+
+  fill($('selYear'), cfg.years || []);
+  fill($('selTerm'), cfg.terms || []);
+  fill($('selLevel'), cfg.levels || []);
+
+  // 前期 と Super Basic を既定選択
+  const t = (cfg.terms || []).find(x => /前期/.test(x.name));
+  if (t) $('selTerm').value = t.id;
+  const l = (cfg.levels || []).find(x => /super\s*basic/i.test(x.name));
+  if (l) $('selLevel').value = l.id;
+
+  ['selYear', 'selTerm', 'selLevel'].forEach(id => $(id).addEventListener('change', updatePath));
+  updatePath();
+  $('btnRun').disabled = false;
+}
+
+async function put(key, text) {
+  const r = await fetch(`${workerUrl}/${key}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+    body: text,
+  });
+  if (!r.ok) throw new Error(`HTTP ${r.status}`);
+}
+
+$('btnRun').addEventListener('click', async () => {
+  const y = pick($('selYear'), cfg.years);
+  const t = pick($('selTerm'), cfg.terms);
+  const l = pick($('selLevel'), cfg.levels);
+  if (!y || !t || !l) return;
+
+  $('btnRun').disabled = true;
+  $('log').innerHTML = '';
+  let ok = 0, fail = 0;
+
+  for (let n = 1; n <= LESSONS; n++) {
+    for (const [suffix, label] of [['.txt', '和訳'], ['.answer.txt', '解答']]) {
+      const line = log(`第${n}講 ${label} …`);
+      try {
+        const res = await fetch(`${SRC_DIR}/lesson${n}${suffix}`, { cache: 'no-store' });
+        if (!res.ok) throw new Error(`元ファイル取得失敗 (HTTP ${res.status})`);
+        const text = await res.text();
+        await put(`${y.tag}/${t.tag}/${l.tag}/lesson${n}${suffix}`, text);
+        setLog(line, `第${n}講 ${label} — 保存しました`, 'ok');
+        ok++;
+      } catch (e) {
+        setLog(line, `第${n}講 ${label} — 失敗: ${e.message}`, 'err');
+        fail++;
+      }
+    }
+  }
+
+  log(`完了: 成功 ${ok} 件 / 失敗 ${fail} 件`, fail ? 'err' : 'ok');
+  $('btnRun').disabled = false;
+});
+
+loadCfg();
+</script>
+</body>
+</html>
