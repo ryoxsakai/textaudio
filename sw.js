@@ -1,4 +1,4 @@
-const CACHE = 'dke-shell-v21';
+const CACHE = 'dke-shell-v22';
 const SHELL = [
   '/',
   '/index.html',
