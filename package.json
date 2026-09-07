@@ -1,0 +1,12 @@
+{
+  "name": "textaudio",
+  "private": true,
+  "description": "DKE Medical English listening PWA (static frontend) + Cloudflare Worker R2 audio backend",
+  "scripts": {
+    "dev:worker": "wrangler dev",
+    "serve": "python3 -m http.server 8000"
+  },
+  "devDependencies": {
+    "wrangler": "^4.103.0"
+  }
+}
