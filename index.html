@@ -147,6 +147,13 @@
     .btn-preset.active { border-color: transparent; background: var(--grad); color: #fff; }
     .btn-preset:active { opacity: .7; }
 
+    /* ── Playback mode ── */
+    .play-mode-section { margin-bottom: 16px; }
+    .play-mode-row { display: flex; gap: 6px; padding: 3px; border-radius: 14px; background: var(--primary-lt); }
+    .btn-play-mode { flex: 1; min-height: 36px; border: none; border-radius: 11px; background: transparent; color: var(--muted); font-family: inherit; font-size: .78rem; font-weight: 700; cursor: pointer; -webkit-tap-highlight-color: transparent; transition: background .15s, color .15s, box-shadow .15s; }
+    .btn-play-mode.active { background: #fff; color: var(--primary); box-shadow: 0 2px 8px rgba(80,120,200,.14); }
+    .btn-play-mode:active { opacity: .75; }
+
     /* ── Speed slider ── */
     .speed-range-wrap { padding: 6px 4px 2px; }
     .speed-range { width: 100%; height: 4px; appearance: none; -webkit-appearance: none; border-radius: 2px; outline: none; cursor: pointer; -webkit-tap-highlight-color: transparent; }
@@ -311,6 +318,13 @@
         <input type="range" id="speedRangeInput" class="speed-range" min="0.5" max="2.5" step="0.05" value="1">
       </div>
     </div>
+    <div class="play-mode-section" id="playModeSection">
+      <div class="speed-label">再生モード</div>
+      <div class="play-mode-row" role="group" aria-label="再生モード">
+        <button class="btn-play-mode active" data-play-mode="normal" aria-pressed="true">通常</button>
+        <button class="btn-play-mode" data-play-mode="repeat" aria-pressed="false"><i class="fas fa-repeat" style="margin-right:5px"></i>この講をリピート</button>
+      </div>
+    </div>
     <div class="lesson-nav" id="lessonNav">
       <button class="ctrl-btn" id="btnPrevLesson" title="前の講" disabled><i class="fas fa-backward-step"></i></button>
       <span class="nav-label" id="navLabel"></span>
@@ -421,6 +435,7 @@ function revokeObjURL() {
 const SK = 'dke_settings';
 const DK = 'dke_completed';
 const DT_KEY = 'dke_daily_time';
+const PLAY_MODE_KEY = 'dke_play_mode';
 let dailyAccSec = 0, lastPlayT = null;
 
 function todayStr() {
@@ -769,6 +784,23 @@ function setPI(playing) {
   const icon = document.getElementById('iconPlay');
   icon.className = playing ? 'fas fa-pause' : 'fas fa-play';
 }
+
+function setPlayMode(mode, save = true) {
+  const nextMode = mode === 'repeat' ? 'repeat' : 'normal';
+  audio.loop = nextMode === 'repeat';
+  document.querySelectorAll('.btn-play-mode').forEach(btn => {
+    const active = btn.dataset.playMode === nextMode;
+    btn.classList.toggle('active', active);
+    btn.setAttribute('aria-pressed', String(active));
+  });
+  if (save) {
+    try { localStorage.setItem(PLAY_MODE_KEY, nextMode); } catch {}
+  }
+}
+document.querySelectorAll('.btn-play-mode').forEach(btn => {
+  btn.addEventListener('click', () => setPlayMode(btn.dataset.playMode));
+});
+
 document.getElementById('btnPlay').addEventListener('click', () => {
   if (audio.paused) { audio.play().catch(() => {}); setPI(true); startViz(); }
   else              { audio.pause(); setPI(false); stopViz(); }
@@ -1328,6 +1360,7 @@ const OB_STEPS = [
   { id: 'vizCanvas',    title: 'ビジュアライザー',    desc: '再生中にリアルタイムで音声の周波数スペクトルを表示します。' },
   { id: 'ctrlRow',      title: '再生コントロール',    desc: '中央ボタンで再生・一時停止。左右で10秒ずつ移動します。' },
   { id: 'speedSection', idAlt: 'speedAltProg', title: '再生速度', desc: 'ボタンで速度を選択。速度ボタンをダブルタップするとスライダーに切り替わり細かく調整できます。' },
+  { id: 'playModeSection', title: '再生モード', desc: '「この講をリピート」を選ぶと、同じ講の音声を繰り返し再生します。「通常」で1回再生に戻せます。' },
   { id: 'lessonNav',    title: '講の移動',          desc: '左右ボタンで同じレベルの前後の講に移動できます。' },
   { id: 'btnMarkDone',  title: '完了マーク',         desc: '聴き終えた講を「完了」としてマークします。一覧の進捗管理に使えます。' },
   { id: 'btnTrans',     title: '和訳・解答',         desc: '和訳と解答を表示します。再生中も閲覧できます（和訳がない場合はグレー表示）。' },
@@ -1379,6 +1412,9 @@ document.getElementById('obX').addEventListener('click', stopOnboarding);
 
 async function init() {
   loadDone(); loadDailyTime(); updateDailyTimeBadge(); loadTransFont();
+  let savedPlayMode = 'normal';
+  try { savedPlayMode = localStorage.getItem(PLAY_MODE_KEY) || 'normal'; } catch {}
+  setPlayMode(savedPlayMode, false);
   await loadCachedKeys();
   try { await loadCfg(); }
   catch { document.getElementById('tableContainer').innerHTML = '<div class="msg-c err">コンテンツを読み込めませんでした</div>'; return; }
