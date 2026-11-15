@@ -393,7 +393,7 @@ function switchTab(tabId) {
   btn.classList.add('active');
   document.getElementById(tabId).classList.add('active');
   localStorage.setItem('dke_active_tab', tabId);
-  if (tabId === 't4') renderContentList();
+  if (tabId === 't4') { populateClFilters(); renderContentList(); }
   if (tabId === 't3') populateUploadSelects();
 }
 
@@ -720,13 +720,26 @@ document.getElementById('testConnBtn').addEventListener('click', async () => {
 });
 
 /* ── File upload ── */
+function visibleLevelsForTerm(termId) {
+  const term = cfg.terms.find(t => t.id === termId);
+  return term ? cfg.levels.filter(l => ((term.levelLessons || {})[l.id] ?? term.lessons) > 0) : [];
+}
+
+function populateUploadLevels() {
+  const select = document.getElementById('upLevel');
+  const previous = select.value;
+  const visible = visibleLevelsForTerm(document.getElementById('upTerm').value);
+  select.innerHTML = '<option value="">レベルを選択</option>' + visible.map(l => `<option value="${esc(l.id)}">${esc(l.name)}</option>`).join('');
+  select.disabled = visible.length === 0;
+  if (visible.some(l => l.id === previous)) select.value = previous;
+}
+
 function populateUploadSelects() {
   const yS = document.getElementById('upYear');
   const tS = document.getElementById('upTerm');
-  const lS = document.getElementById('upLevel');
   yS.innerHTML = '<option value="">年度を選択</option>' + cfg.years.map(y => `<option value="${y.id}">${y.name}</option>`).join('');
   tS.innerHTML = '<option value="">学期を選択</option>' + cfg.terms.map(t => `<option value="${t.id}">${t.name}</option>`).join('');
-  lS.innerHTML = '<option value="">レベルを選択</option>' + cfg.levels.map(l => `<option value="${l.id}">${l.name}</option>`).join('');
+  populateUploadLevels();
 }
 
 
@@ -789,6 +802,7 @@ function renderPreview() {
 }
 
 ['upYear','upTerm','upLevel'].forEach(id => document.getElementById(id).addEventListener('change', () => {
+  if (id === 'upTerm') populateUploadLevels();
   renderPreview();
 }));
 
@@ -986,6 +1000,18 @@ function saveClFilter() {
 }
 
 let _clFiltersReady = false;
+function populateClLevels(preferredLevel) {
+  const select = document.getElementById('clLevel');
+  const visible = visibleLevelsForTerm(document.getElementById('clTerm').value);
+  select.innerHTML = visible.map(l => `<option value="${esc(l.id)}">${esc(l.name)}</option>`).join('');
+  select.disabled = visible.length === 0;
+  if (!visible.length) {
+    select.innerHTML = '<option value="">選択できる講座がありません</option>';
+  } else if (visible.some(l => l.id === preferredLevel)) {
+    select.value = preferredLevel;
+  }
+}
+
 function populateClFilters() {
   const yS = document.getElementById('clYear');
   const tS = document.getElementById('clTerm');
@@ -995,13 +1021,16 @@ function populateClFilters() {
   try { saved = JSON.parse(localStorage.getItem(CL_FK) || '{}'); } catch {}
   yS.innerHTML = cfg.years.map(y  => `<option value="${y.id}">${y.name}</option>`).join('');
   tS.innerHTML = cfg.terms.map(t  => `<option value="${t.id}">${t.name}</option>`).join('');
-  lS.innerHTML = cfg.levels.map(l => `<option value="${l.id}">${l.name}</option>`).join('');
   if (yv) yS.value = yv; else if (saved.year)  yS.value = saved.year;
   if (tv) tS.value = tv; else if (saved.term)  tS.value = saved.term;
-  if (lv) lS.value = lv; else if (saved.level) lS.value = saved.level;
+  if (!tS.value && cfg.terms.length) tS.value = cfg.terms[0].id;
+  populateClLevels(lv || saved.level);
   if (!_clFiltersReady) {
     ['clYear','clTerm','clLevel'].forEach(id =>
-      document.getElementById(id).addEventListener('change', () => { saveClFilter(); renderContentList(); })
+      document.getElementById(id).addEventListener('change', () => {
+        if (id === 'clTerm') populateClLevels(lS.value);
+        saveClFilter(); renderContentList();
+      })
     );
     _clFiltersReady = true;
   }
@@ -1012,7 +1041,7 @@ function renderContentList() {
   const yF = document.getElementById('clYear').value;
   const tF = document.getElementById('clTerm').value;
   const lF = document.getElementById('clLevel').value;
-  const rows = allRows().filter(r => (!yF || r.y.id === yF) && (!tF || r.t.id === tF) && (!lF || r.l.id === lF));
+  const rows = tF && !lF ? [] : allRows().filter(r => (!yF || r.y.id === yF) && (!tF || r.t.id === tF) && (!lF || r.l.id === lF));
   settingsPlayerRows = rows;
   const con = document.getElementById('contentListTable');
   if (!rows.length) { con.innerHTML = '<div class="msg-c">コンテンツがありません</div>'; return; }
