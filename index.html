@@ -657,7 +657,7 @@ function render() {
   const yF = document.getElementById('filterYear').value;
   const tF = document.getElementById('filterTerm').value;
   const lF = document.getElementById('filterLevel').value;
-  const baseRows = allRows().filter(r => (!yF || r.y.id === yF) && (!tF || r.t.id === tF) && (!lF || r.l.id === lF));
+  const baseRows = tF && !lF ? [] : allRows().filter(r => (!yF || r.y.id === yF) && (!tF || r.t.id === tF) && (!lF || r.l.id === lF));
   updateProgress(baseRows);
   updateDlBadge(baseRows);
   let rows = completionFilter === 1 ? baseRows.filter(r =>  done[r.key])
@@ -718,6 +718,19 @@ function saveFilter() {
   } catch {}
 }
 
+function populateVisibleLevels(preferredLevel) {
+  const term = cfg.terms.find(t => t.id === document.getElementById('filterTerm').value);
+  const select = document.getElementById('filterLevel');
+  const visible = cfg.levels.filter(l => !term || ((term.levelLessons || {})[l.id] ?? term.lessons) > 0);
+  select.innerHTML = visible.map(l => `<option value="${esc(l.id)}">${esc(l.name)}</option>`).join('');
+  select.disabled = visible.length === 0;
+  if (!visible.length) {
+    select.innerHTML = '<option value="">選択できる講座がありません</option>';
+  } else if (visible.some(l => l.id === preferredLevel)) {
+    select.value = preferredLevel;
+  }
+}
+
 function populateFilters() {
   const ySel = document.getElementById('filterYear');
   const tSel = document.getElementById('filterTerm');
@@ -727,7 +740,6 @@ function populateFilters() {
   try { saved = JSON.parse(localStorage.getItem(FK) || '{}'); } catch {}
   ySel.innerHTML = cfg.years.map(y => `<option value="${y.id}">${y.name}</option>`).join('');
   tSel.innerHTML = cfg.terms.map(t => `<option value="${t.id}">${t.name}</option>`).join('');
-  lSel.innerHTML = cfg.levels.map(l => `<option value="${l.id}">${l.name}</option>`).join('');
   // Year: localStorage/default only — URL year param only affects player modal, not filter
   if (yv)                    ySel.value = yv;
   else if (saved.year)       ySel.value = saved.year;
@@ -740,10 +752,8 @@ function populateFilters() {
   else if (tv)               tSel.value = tv;
   else if (saved.term)       tSel.value = saved.term;
   else if (cfg.defaultTerm)  tSel.value = cfg.defaultTerm;
-  if (ul)                    lSel.value = ul.id;
-  else if (lv)               lSel.value = lv;
-  else if (saved.level)      lSel.value = saved.level;
-  else if (cfg.defaultLevel) lSel.value = cfg.defaultLevel;
+  if (!tSel.value && cfg.terms.length) tSel.value = cfg.terms[0].id;
+  populateVisibleLevels(ul?.id || lv || saved.level || cfg.defaultLevel);
 }
 
 function toggleDone(yId, tId, lId, n) {
@@ -1424,7 +1434,10 @@ async function init() {
   }
   populateFilters(); render(); handleParams();
   document.getElementById('filterYear').addEventListener('change',  () => { saveFilter(); render(); });
-  document.getElementById('filterTerm').addEventListener('change',  () => { saveFilter(); render(); });
+  document.getElementById('filterTerm').addEventListener('change',  () => {
+    populateVisibleLevels(document.getElementById('filterLevel').value);
+    saveFilter(); render();
+  });
   document.getElementById('filterLevel').addEventListener('change', () => { saveFilter(); render(); });
 }
 init();
